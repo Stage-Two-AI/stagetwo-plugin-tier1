@@ -15,10 +15,11 @@
  *
  * Het script zet precies twee dingen en laat de rest van het bestand staan:
  *   env.FORCE_AUTOUPDATE_PLUGINS = "1"
- *   extraKnownMarketplaces.stagetwo-light = { source: github Stage-Two-AI/stack-plugin-light, autoUpdate: true }
- * Een bestaande stagetwo-light-regel houdt zijn eigen velden; alleen autoUpdate (en een
- * ontbrekende source) wordt aangevuld. De regels van de andere sporen (stagetwo voor
- * Vercel, stagetwo-cloudflare) blijven onaangeroerd. Is het bestand geen geldige JSON, dan raakt het
+ *   extraKnownMarketplaces.stagetwo-tier1 = { source: github Stage-Two-AI/stagetwo-plugin-tier1, autoUpdate: true }
+ * Een bestaande stagetwo-tier1-regel houdt zijn eigen velden; alleen autoUpdate (en een
+ * ontbrekende source) wordt aangevuld. De regels van de plugin onder zijn oude naam
+ * (marketplace stagetwo-light, plugin stack-light, tot 15-10-2026) haalt het weg, zodat de
+ * oude plugin niet terugkomt. Andere marketplaces (zoals stagetwo-tier2) blijven onaangeroerd. Is het bestand geen geldige JSON, dan raakt het
  * script het niet aan.
  *
  * Uitkomst: één JSON-object met `status`:
@@ -32,8 +33,11 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const MARKETPLACE = "stagetwo-light";
-export const BRON = { source: "github", repo: "Stage-Two-AI/stack-plugin-light" };
+export const MARKETPLACE = "stagetwo-tier1";
+export const BRON = { source: "github", repo: "Stage-Two-AI/stagetwo-plugin-tier1" };
+/** De plugin onder zijn naam van vóór 15-10-2026 (besluit tier 1 en tier 2). */
+export const OUDE_MARKETPLACES = ["stagetwo-light"];
+export const OUDE_PLUGINS = ["stack-light@stagetwo-light"];
 
 export function instellingenPad(env = process.env) {
   // homedir() en niet $HOME: in Git Bash op Windows wijst $HOME soms ergens anders heen
@@ -49,6 +53,12 @@ export function watOntbreekt(instellingen) {
   const regel = instellingen?.extraKnownMarketplaces?.[MARKETPLACE];
   if (!regel?.source) mist.push(`extraKnownMarketplaces.${MARKETPLACE}.source`);
   if (regel?.autoUpdate !== true) mist.push(`extraKnownMarketplaces.${MARKETPLACE}.autoUpdate`);
+  for (const oud of OUDE_MARKETPLACES) {
+    if (instellingen?.extraKnownMarketplaces?.[oud] !== undefined) mist.push(`weg: extraKnownMarketplaces.${oud}`);
+  }
+  for (const oud of OUDE_PLUGINS) {
+    if (instellingen?.enabledPlugins?.[oud] !== undefined) mist.push(`weg: enabledPlugins.${oud}`);
+  }
   return mist;
 }
 
@@ -61,7 +71,13 @@ export function aanvullen(instellingen) {
   if (!regel.source) regel.source = { ...BRON };
   regel.autoUpdate = true;
   markten[MARKETPLACE] = regel;
+  for (const oud of OUDE_MARKETPLACES) delete markten[oud];
   uit.extraKnownMarketplaces = markten;
+  if (instellingen.enabledPlugins && OUDE_PLUGINS.some((p) => p in instellingen.enabledPlugins)) {
+    const plugins = { ...instellingen.enabledPlugins };
+    for (const oud of OUDE_PLUGINS) delete plugins[oud];
+    uit.enabledPlugins = plugins;
+  }
   return uit;
 }
 

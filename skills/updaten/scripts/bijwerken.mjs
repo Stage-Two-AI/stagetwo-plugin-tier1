@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Het script achter het templatedeel van /stack-light:updaten: brengt de app van de klant naar de nieuwste
+ * Het script achter het templatedeel van /stagetwo-tier1:updaten: brengt de app van de klant naar de nieuwste
  * versie van de Stage Two-template, als pull request van de klant zelf. Twee aanroepen
  * per ronde (KTD9), allebei vanuit de open checkout van de klant:
  *
@@ -168,10 +168,10 @@ export function anderSpoor(manifest) {
   const variant = manifest && typeof manifest === "object" ? manifest.variant : undefined;
   const reden =
     variant === "cloudflare"
-      ? "deze app komt uit de Cloudflare-template van Stage Two (met Supabase); die werk je bij met /stack-cloudflare:updaten van de andere Stage Two-plugin, niet met deze"
+      ? "deze app komt uit de Cloudflare-template van Stage Two (met Supabase); die werk je bij met /stagetwo-tier2:updaten van de andere Stage Two-plugin, niet met deze"
       : variant === undefined || variant === null
         ? "deze app komt uit de Vercel-template van Stage Two; die werk je bij met /stack:updaten van de andere Stage Two-plugin, niet met deze"
-        : `deze app heeft variant ${JSON.stringify(variant)} in .claude/stack-manifest.json en is niet van stack-light; deze plugin werkt alleen apps met variant "light" bij`;
+        : `deze app heeft variant ${JSON.stringify(variant)} in .claude/stack-manifest.json en is niet van tier 1; deze plugin werkt alleen apps met variant "light" bij`;
   return { status: "ander-spoor", reden };
 }
 
@@ -200,7 +200,7 @@ export function droogloop({ checkout, opAfstand = null, env = process.env }) {
   if (opAfstand === null && !isLightManifest(leesManifestRuw(checkout))) return anderSpoor(leesManifestRuw(checkout));
 
   const metGh = ghAanwezig();
-  if (opAfstand !== null && !metGh) return mislukt("een andere app bijwerken kan alleen met de GitHub-opdrachtregel (gh); draai eerst /stack-light:installatie");
+  if (opAfstand !== null && !metGh) return mislukt("een andere app bijwerken kan alleen met de GitHub-opdrachtregel (gh); draai eerst /stagetwo-tier1:installatie");
   if (metGh && !ghIngelogd()) return mislukt("log eerst in bij GitHub met `gh auth login`, dan kan de pull request geopend worden");
 
   const origin = opAfstand !== null ? `https://github.com/${opAfstand}.git` : originUrl(checkout);
@@ -254,7 +254,7 @@ export function droogloop({ checkout, opAfstand = null, env = process.env }) {
     }
     if (!branchHerbouwbaar(kloon, branch)) {
       verwijderWerkmap(werkmap);
-      return gestopt(`op de branch ${branch} staat een commit die niet van /stack-light:updaten is; bekijk de open pull request voor die branch of verwijder de branch, en draai dan opnieuw`);
+      return gestopt(`op de branch ${branch} staat een commit die niet van /stagetwo-tier1:updaten is; bekijk de open pull request voor die branch of verwijder de branch, en draai dan opnieuw`);
     }
 
     const tmplMap = kloonTemplate({ repo: tmplRepo, doel: join(werkmap, "template") });
@@ -356,7 +356,7 @@ export function voerUit({ werkmap, losOp }) {
     // Tussen de droogloop en nu kan iemand op de branch hebben gecommit; ook dan blijven we ervan af.
     if (!branchHerbouwbaar(kloon, branch)) {
       verwijderWerkmap(werkmap);
-      return gestopt(`op de branch ${branch} staat sinds de droogloop een commit die niet van /stack-light:updaten is; bekijk de open pull request voor die branch en draai dan opnieuw`);
+      return gestopt(`op de branch ${branch} staat sinds de droogloop een commit die niet van /stagetwo-tier1:updaten is; bekijk de open pull request voor die branch en draai dan opnieuw`);
     }
     const gepusht = !alGelijkOpGitHub(kloon, branch);
     if (gepusht) push(kloon, branch);

@@ -31,13 +31,13 @@ test("geen bestand: wordt aangemaakt met precies de twee instellingen", () => {
     assert.equal(r.status, "gezet");
     assert.deepEqual(lees(map), {
       env: { FORCE_AUTOUPDATE_PLUGINS: "1" },
-      extraKnownMarketplaces: { "stagetwo-light": { source: BRON, autoUpdate: true } },
+      extraKnownMarketplaces: { "stagetwo-tier1": { source: BRON, autoUpdate: true } },
     });
     assert.equal(automatischBijwerken({ env }).status, "al-goed", "tweede keer: niets te doen");
   });
 });
 
-test("bestaand bestand: alles van de gebruiker blijft staan, ook de stagetwo-regel van het Vercel-spoor en een eigen stagetwo-light-regel", () => {
+test("bestaand bestand: alles van de gebruiker blijft staan, ook de stagetwo-regel van het Vercel-spoor en een eigen stagetwo-tier1-regel", () => {
   metMap((map, env) => {
     const voor = {
       theme: "dark",
@@ -46,23 +46,45 @@ test("bestaand bestand: alles van de gebruiker blijft staan, ook de stagetwo-reg
       extraKnownMarketplaces: {
         ander: { source: { source: "github", repo: "x/y" } },
         stagetwo: { source: { source: "github", repo: "Stage-Two-AI/stack-plugin" } },
-        "stagetwo-light": { source: { source: "git", url: "https://github.com/Stage-Two-AI/stack-plugin-light.git" } },
+        "stagetwo-tier1": { source: { source: "git", url: "https://github.com/Stage-Two-AI/stagetwo-plugin-tier1.git" } },
       },
     };
     writeFileSync(join(map, "settings.json"), JSON.stringify(voor));
     const r = automatischBijwerken({ env });
     assert.equal(r.status, "gezet");
-    assert.deepEqual(r.gewijzigd, ["env.FORCE_AUTOUPDATE_PLUGINS", "extraKnownMarketplaces.stagetwo-light.autoUpdate"]);
+    assert.deepEqual(r.gewijzigd, ["env.FORCE_AUTOUPDATE_PLUGINS", "extraKnownMarketplaces.stagetwo-tier1.autoUpdate"]);
     const na = lees(map);
     assert.equal(na.theme, "dark");
     assert.deepEqual(na.env, { EIGEN: "ja", FORCE_AUTOUPDATE_PLUGINS: "1" });
     assert.deepEqual(na.enabledPlugins, voor.enabledPlugins);
     assert.deepEqual(na.extraKnownMarketplaces.ander, voor.extraKnownMarketplaces.ander);
     assert.deepEqual(na.extraKnownMarketplaces.stagetwo, voor.extraKnownMarketplaces.stagetwo, "het Vercel-spoor blijft onaangeroerd");
-    assert.deepEqual(na.extraKnownMarketplaces["stagetwo-light"], {
-      source: voor.extraKnownMarketplaces["stagetwo-light"].source,
+    assert.deepEqual(na.extraKnownMarketplaces["stagetwo-tier1"], {
+      source: voor.extraKnownMarketplaces["stagetwo-tier1"].source,
       autoUpdate: true,
     });
+  });
+});
+
+test("de plugin onder zijn oude naam (stack-light@stagetwo-light) gaat eruit, de rest blijft", () => {
+  metMap((map, env) => {
+    const voor = {
+      env: { FORCE_AUTOUPDATE_PLUGINS: "1" },
+      enabledPlugins: { "stack-light@stagetwo-light": true, "stagetwo-tier2@stagetwo-tier2": true },
+      extraKnownMarketplaces: {
+        "stagetwo-light": { source: { source: "github", repo: "Stage-Two-AI/stack-plugin-light" }, autoUpdate: true },
+        "stagetwo-tier1": { source: BRON, autoUpdate: true },
+        "stagetwo-tier2": { source: { source: "github", repo: "Stage-Two-AI/stagetwo-plugin-tier2" }, autoUpdate: true },
+      },
+    };
+    writeFileSync(join(map, "settings.json"), JSON.stringify(voor));
+    const r = automatischBijwerken({ env });
+    assert.equal(r.status, "gezet");
+    assert.deepEqual(r.gewijzigd, ["weg: extraKnownMarketplaces.stagetwo-light", "weg: enabledPlugins.stack-light@stagetwo-light"]);
+    const na = lees(map);
+    assert.deepEqual(na.enabledPlugins, { "stagetwo-tier2@stagetwo-tier2": true });
+    assert.deepEqual(Object.keys(na.extraKnownMarketplaces), ["stagetwo-tier1", "stagetwo-tier2"]);
+    assert.equal(automatischBijwerken({ env }).status, "al-goed", "tweede keer: niets te doen");
   });
 });
 

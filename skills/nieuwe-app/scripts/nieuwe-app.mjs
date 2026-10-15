@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Het script achter /stack-light:nieuwe-app: maakt een nieuwe app aan uit de openbare
- * lichte template van Stage Two (Stage-Two-AI/stack-template-light), onder de organisatie
+ * Het script achter /stagetwo-tier1:nieuwe-app: maakt een nieuwe app aan uit de openbare
+ * lichte template van Stage Two (Stage-Two-AI/app-template-tier1), onder de organisatie
  * van de gebruiker, met zijn eigen login. Dit is het deel van het opzetrecept dat een
  * machine kan doen; het gesprek ervoor (wat moet de app doen, wie mag erbij) staat in
  * SKILL.md.
@@ -24,10 +24,10 @@
  *       Cloudflare-toegang (GitHub blijft de enige poort).
  *
  *   node nieuwe-app.mjs --json --inrichten --naam <naam> --eigenaar <org> [--groepen a,b] [--beheer <repo>]
- *       kijkt eerst of de app in toegang.json van <org>/stagetwo-beheer staat. Zo niet, dan
- *       opent het een pull request op stagetwo-beheer die hem toevoegt met de gekozen groepen
+ *       kijkt eerst of de app in toegang.json van <org>/stagetwo-beheer-tier1 staat. Zo niet, dan
+ *       opent het een pull request op stagetwo-beheer-tier1 die hem toevoegt met de gekozen groepen
  *       (status `wacht-op-toegang`; de eigenaar keurt goed, daarna opnieuw draaien). Staat
- *       hij erin, dan start het de workflow "App inrichten" in <org>/stagetwo-beheer, wacht tot
+ *       hij erin, dan start het de workflow "App inrichten" in <org>/stagetwo-beheer-tier1, wacht tot
  *       hij klaar is en leest het resultaat uit het logboek. Zo komen de Worker, de deur, D1
  *       en R2 erbij zonder dat er een Cloudflare-sleutel op deze computer staat.
  *
@@ -54,7 +54,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ghAanwezig, ghIngelogd, git, sh } from "../../../lib/repo.mjs";
 
-export const TEMPLATE = "Stage-Two-AI/stack-template-light";
+export const TEMPLATE = "Stage-Two-AI/app-template-tier1";
 export const STAGE_TWO_LOGIN = "StageTwoAI";
 const HIER = dirname(fileURLToPath(import.meta.url));
 const RULESET_PAD = join(HIER, "..", "ruleset.json");
@@ -91,7 +91,7 @@ export function leesArgumenten(argv) {
     else if (a === "--database" || a.startsWith("--gedeeld-")) {
       // Uit de andere sporen. In light valt er niets te kiezen; liever een duidelijke zin
       // dan "onbekende optie".
-      throw new Error(`${a} bestaat niet in stack-light: elke app heeft altijd een eigen D1-database en R2-bestanden`);
+      throw new Error(`${a} bestaat niet in tier 1: elke app heeft altijd een eigen D1-database en R2-bestanden`);
     } else if (a in metWaarde) {
       const waarde = argv[i + 1];
       if (waarde === undefined || waarde.startsWith("--")) throw new Error(`${a} vraagt een waarde`);
@@ -123,7 +123,7 @@ export function controleerArgumenten(arg) {
     return "--groepen: namen van groepen uit toegang.json, met komma's (kleine letters, cijfers, streepjes)";
   }
   if (arg.beheer !== null && arg.beheer !== undefined && !/^[a-z0-9][a-z0-9-]{0,99}$/.test(arg.beheer)) {
-    return "--beheer: de naam van de beheer-repo binnen de organisatie, zonder eigenaar (bijvoorbeeld stagetwo-beheer)";
+    return "--beheer: de naam van de beheer-repo binnen de organisatie, zonder eigenaar (bijvoorbeeld stagetwo-beheer-tier1)";
   }
   return null;
 }
@@ -133,7 +133,7 @@ export function controleerArgumenten(arg) {
 /**
  * Wie wordt de reviewer in CODEOWNERS? Altijd de bouwer zelf: hij merget zijn eigen
  * pull requests op groene checks, en Stage Two wil geen melding bij elke PR van elke
- * klant-app. Toegang en sleutels bewaakt de eigenaar in stagetwo-beheer, niet hier.
+ * klant-app. Toegang en sleutels bewaakt de eigenaar in stagetwo-beheer-tier1, niet hier.
  */
 export function kiesReviewer({ login }) {
   return login;
@@ -409,12 +409,13 @@ function isKloonVan(map, repo) {
 
 // ---------------------------------------------------------------- inrichten
 
-// De beheer-repo van een light-klant heet `stagetwo-beheer` (vóór 13-10-2026 `stack-beheer`).
+// De beheer-repo van een tier 1-eigenaar heet `stagetwo-beheer-tier1` (tot 15-10-2026
+// `stagetwo-beheer-light` of `stagetwo-beheer`, daarvoor `stack-beheer`).
 // Een organisatie kan er meer hebben, één per Cloudflare-account (Stage Two zelf: de eigen
 // apps en de privé-apps in één organisatie). Het script zoekt daarom niet op naam maar op
 // inhoud: elke repo met "beheer" in de naam en de inrichting van het lichte spoor telt. Zijn
 // het er meer, dan kiest de gebruiker met --beheer.
-/** Aan dit bestand herken je een beheer-repo van het lichte spoor (uit stack-beheer, klant-light/). */
+/** Aan dit bestand herken je een beheer-repo van het lichte spoor (uit beheer-template, klant-tier1/). */
 export const LIGHT_KENMERK = "beheer/inrichten-light.mjs";
 
 function heeftBestand(repo, pad) {
@@ -546,21 +547,21 @@ function vraagToegangAan(beheer, arg, toegang, sha) {
   return sh("gh", [
     "pr", "create", "--repo", beheer, "--base", "main", "--head", branch,
     "--title", `Toegang: ${arg.naam}`,
-    "--body", `De nieuwe app **${arg.naam}** komt in toegang.json, voor de groep(en) ${arg.groepen.map((g) => `\`${g}\``).join(", ")}.\n\nAangevraagd met /stack-light:nieuwe-app. Na goedkeuring en merge kan de app worden ingericht.`,
+    "--body", `De nieuwe app **${arg.naam}** komt in toegang.json, voor de groep(en) ${arg.groepen.map((g) => `\`${g}\``).join(", ")}.\n\nAangevraagd met /stagetwo-tier1:nieuwe-app. Na goedkeuring en merge kan de app worden ingericht.`,
   ]);
 }
 
 /**
  * Start de workflow in de beheer-repo en wacht op het resultaat. `gh` doet al het werk
- * met de login van de gebruiker: die heeft Write op stagetwo-beheer (mag starten) en leest
+ * met de login van de gebruiker: die heeft Write op stagetwo-beheer-tier1 (mag starten) en leest
  * het logboek. Er komt geen sleutel van Cloudflare aan te pas: die staan alleen in de
  * omgeving beheer van de beheer-repo.
  */
 export function richtIn(arg, { cwd = process.cwd(), wachtMs = 5000, maxWachtMinuten = 30 } = {}) {
   const fout = controleerArgumenten(arg);
   if (fout) return { status: "mislukt", reden: fout };
-  if (!ghAanwezig()) return { status: "mislukt", reden: "de GitHub-opdrachtregel (gh) ontbreekt; draai eerst /stack-light:installatie" };
-  if (!ghIngelogd()) return { status: "mislukt", reden: "log eerst in bij GitHub met `gh auth login` (zie /stack-light:installatie)" };
+  if (!ghAanwezig()) return { status: "mislukt", reden: "de GitHub-opdrachtregel (gh) ontbreekt; draai eerst /stagetwo-tier1:installatie" };
+  if (!ghIngelogd()) return { status: "mislukt", reden: "log eerst in bij GitHub met `gh auth login` (zie /stagetwo-tier1:installatie)" };
 
   const keuze = isOrganisatie(arg.eigenaar)
     ? kiesBeheerRepo(arg.eigenaar, lichteBeheerRepos(arg.eigenaar), arg.beheer)
@@ -675,11 +676,11 @@ export function voorcontrole(arg, { cwd = process.cwd() } = {}) {
     try {
       sh(cli, ["--version"], { shell: cli === "pnpm" && process.platform === "win32" });
     } catch {
-      return { status: "mislukt", reden: `${cli} staat niet op deze computer; draai eerst /stack-light:installatie` };
+      return { status: "mislukt", reden: `${cli} staat niet op deze computer; draai eerst /stagetwo-tier1:installatie` };
     }
   }
-  if (!ghAanwezig()) return { status: "mislukt", reden: "de GitHub-opdrachtregel (gh) ontbreekt; draai eerst /stack-light:installatie" };
-  if (!ghIngelogd()) return { status: "mislukt", reden: "log eerst in bij GitHub met `gh auth login` (zie /stack-light:installatie)" };
+  if (!ghAanwezig()) return { status: "mislukt", reden: "de GitHub-opdrachtregel (gh) ontbreekt; draai eerst /stagetwo-tier1:installatie" };
+  if (!ghIngelogd()) return { status: "mislukt", reden: "log eerst in bij GitHub met `gh auth login` (zie /stagetwo-tier1:installatie)" };
 
   const gebruiker = login();
   const org = isOrganisatie(arg.eigenaar);

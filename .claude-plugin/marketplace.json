@@ -1,21 +1,21 @@
 {
-  "name": "stagetwo-light",
+  "name": "stagetwo-tier1",
   "owner": {
     "name": "Stage Two",
     "email": "info@stagetwo.nl"
   },
   "metadata": {
-    "description": "Plugins van Stage Two voor Claude Code, voor lichte apps op Cloudflare (één Worker, D1 en R2)."
+    "description": "Plugins van Stage Two voor Claude Code, voor tier 1-apps op Cloudflare (één Worker, D1 en R2)."
   },
   "plugins": [
     {
-      "name": "stack-light",
-      "description": "De werkwijze van Stage Two in Claude Code voor lichte apps op Cloudflare (één Worker per app, D1 en R2): de vaste routes, de bewaking van de gedeelde template, en de skills /stack-light:installatie, /stack-light:nieuwe-app, /stack-light:verder-werken en /stack-light:updaten.",
+      "name": "stagetwo-tier1",
+      "description": "De werkwijze van Stage Two in Claude Code voor tier 1-apps op Cloudflare (één Worker per app, D1 en R2): de vaste routes, de bewaking van de gedeelde template, en de skills /stagetwo-tier1:installatie, /stagetwo-tier1:nieuwe-app, /stagetwo-tier1:verder-werken en /stagetwo-tier1:updaten.",
       "author": {
         "name": "Stage Two",
         "email": "info@stagetwo.nl"
       },
-      "homepage": "https://github.com/Stage-Two-AI/stack-plugin-light",
+      "homepage": "https://github.com/Stage-Two-AI/stagetwo-plugin-tier1",
       "source": "./"
     }
   ]
