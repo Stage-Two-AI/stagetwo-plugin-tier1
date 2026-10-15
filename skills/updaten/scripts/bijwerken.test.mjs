@@ -140,7 +140,7 @@ test("voorcontrole: gh niet ingelogd, geen netwerk, geen manifest, geen schrijfr
     writeFileSync(pad, JSON.stringify({ ...JSON.parse(readFileSync(pad, "utf8")), variant: "cloudflare" }));
     const r = c.draai(["--droogloop"]);
     assert.equal(r.status, "ander-spoor");
-    assert.match(r.reden, /\/stack-cloudflare:updaten/);
+    assert.match(r.reden, /\/stagetwo-tier2:updaten/);
     assert.deepEqual(c.werkmappen(), []);
   } finally {
     c.opruimen();
@@ -229,7 +229,7 @@ test("echte run: branch op origin met de identiteit van de klant, main onaangero
     assert.equal(create[create.indexOf("--repo") + 1], "klant/app");
     const body = create[create.indexOf("--body") + 1];
     assert.ok(body.endsWith(BEVESTIGING));
-    assert.ok(body.includes("/stack-light:updaten"));
+    assert.ok(body.includes("/stagetwo-tier1:updaten"));
     assert.ok(!body.includes("Stage Two stack-sync"));
     // Geen commit als Stage Two in de klantrepo vanuit de skill.
     assert.ok(!git(w.klant.origin, "log", "--format=%an", "stack-bijwerken/v9").includes("Stage Two"));
@@ -268,7 +268,7 @@ test("--repo: een andere app bijwerken zonder dat die op deze computer staat, me
 });
 
 test("--repo: een andere app van een ander spoor wordt na het klonen geweigerd, zonder werkmap", () => {
-  for (const [variant, plugin] of [["cloudflare", /\/stack-cloudflare:updaten/], [undefined, /\/stack:updaten/]]) {
+  for (const [variant, plugin] of [["cloudflare", /\/stagetwo-tier2:updaten/], [undefined, /\/stack:updaten/]]) {
     const w = wereld();
     try {
       git(w.klant.checkout, "checkout", "-q", "main");
@@ -475,7 +475,7 @@ test("branch op afstand met een vreemde commit: gestopt en onaangeroerd; alleen 
     assert.notEqual(tweede, eerste);
     const r = w.draai(["--droogloop"]);
     assert.equal(r.status, "gestopt");
-    assert.match(r.reden, /niet van \/stack-light:updaten/);
+    assert.match(r.reden, /niet van \/stagetwo-tier1:updaten/);
     assert.equal(git(w.klant.origin, "rev-parse", "stack-bijwerken/v9"), tweede, "branch onaangeroerd");
     assert.deepEqual(w.werkmappen(), [d2.werkmap.split("/").pop()], "geen nieuwe werkmap; alleen die van de eerdere droogloop");
     // Ook de tweede aanroep van die eerdere droogloop mag de vreemde commit niet overschrijven.

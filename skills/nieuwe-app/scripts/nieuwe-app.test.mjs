@@ -26,7 +26,7 @@ import {
 } from "./nieuwe-app.mjs";
 
 const HIER = dirname(fileURLToPath(import.meta.url));
-const TEMPLATE_LIGHT = join(HIER, "..", "..", "..", "..", "stack-template-light");
+const TEMPLATE_LIGHT = join(HIER, "..", "..", "..", "..", "app-template-tier1");
 
 function verseTemplate() {
   const map = tijdelijkeMap("nieuwe-app-");
@@ -62,7 +62,7 @@ test("argumenten: geen databasekeuze in light; --database en --gedeeld-* geven e
   for (const vlag of [["--database", "eigen"], ["--database", "geen"], ["--database", "gedeeld"], ["--gedeeld-eigenaar", "Org/erp"], ["--gedeeld-ref", "abc"]]) {
     assert.throws(
       () => leesArgumenten(["--droogloop", "--naam", "x1", "--eigenaar", "Org", ...vlag]),
-      /bestaat niet in stack-light.*D1-database en R2-bestanden/,
+      /bestaat niet in tier 1.*D1-database en R2-bestanden/,
       vlag.join(" "),
     );
   }
@@ -250,7 +250,7 @@ test("Cloudflare-namen: ontbrekend bestand, geen name, geen env.preview of een d
 
 test(
   "Cloudflare-namen: werkt op de echte wrangler.jsonc van de light-template",
-  { skip: !existsSync(join(TEMPLATE_LIGHT, "wrangler.jsonc")) && "stack-template-light staat niet naast deze repo" },
+  { skip: !existsSync(join(TEMPLATE_LIGHT, "wrangler.jsonc")) && "app-template-tier1 staat niet naast deze repo" },
   () => {
     const map = tijdelijkeMap("cf-namen-echt-");
     schrijfBestanden(map, { "wrangler.jsonc": readFileSync(join(TEMPLATE_LIGHT, "wrangler.jsonc"), "utf8") });

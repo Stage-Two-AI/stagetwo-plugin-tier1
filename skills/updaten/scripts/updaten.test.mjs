@@ -1,5 +1,5 @@
 /**
- * Tests voor de twee nieuwe scripts van /stack-light:updaten: het overzicht van alle apps van
+ * Tests voor de twee nieuwe scripts van /stagetwo-tier1:updaten: het overzicht van alle apps van
  * de klant (overzicht.mjs) en de PR met afhankelijkheden (afhankelijkheden.mjs). Met een
  * nep-gh en een nep-pnpm op het PATH, dus zonder GitHub en zonder register.
  */
@@ -186,7 +186,7 @@ test("afhankelijkheden: hoofdversies uit pnpm outdated, alleen echte sprongen", 
   const tekst = prTekst({ hoofdversies: uit, dependabot: [{ number: 26, title: "Bump de kleine updates", url: "u" }] });
   assert.match(tekst, /vite`: 6\.3\.1 → 7\.0\.2/);
   assert.match(tekst, /#26 Bump de kleine updates/);
-  assert.match(tekst, /\/stack-light:updaten/);
+  assert.match(tekst, /\/stagetwo-tier1:updaten/);
 });
 
 test("afhankelijkheden: lockfile veranderd geeft een eigen PR met de naam van de gebruiker, main onaangeroerd", () => {

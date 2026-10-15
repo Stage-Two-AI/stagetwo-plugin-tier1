@@ -5,7 +5,7 @@ description: Werkt alles bij zoals een update van een besturingssysteem - de Sta
 
 Je werkt alles bij, zoals een update van een besturingssysteem: eerst wat op deze
 computer staat, dan deze app, dan desgewenst de andere apps. Praat in gewone taal en
-zeg per deel in één regel wat er gebeurt. Het typen van `/stack-light:updaten` is de
+zeg per deel in één regel wat er gebeurt. Het typen van `/stagetwo-tier1:updaten` is de
 toestemming voor deel 1 tot en met 4; vraag die niet nog een keer. Voor deel 5 (andere
 apps) vraag je het wel.
 
@@ -29,7 +29,14 @@ node "${CLAUDE_SKILL_DIR}/../installatie/scripts/automatisch-bijwerken.mjs" --js
 plugin daarna nu meteen bij:
 
 ```sh
-claude plugin marketplace update stagetwo-light && claude plugin update stack-light@stagetwo-light
+claude plugin marketplace update stagetwo-tier1 && claude plugin update stagetwo-tier1@stagetwo-tier1
+```
+
+Haal daarna de plugin onder zijn oude naam weg (tot 15-10-2026 heette hij `stack-light`,
+uit de marketplace `stagetwo-light`). Staat die er niet, dan doen deze regels niets:
+
+```sh
+claude plugin uninstall stack-light@stagetwo-light 2>/dev/null; claude plugin marketplace remove stagetwo-light 2>/dev/null; true
 ```
 
 Lukt dat (ook "already up to date" is goed), onthoud dan of er een nieuwe versie is
@@ -46,7 +53,7 @@ bash "${CLAUDE_SKILL_DIR}/../installatie/scripts/controle.sh"
 ```
 
 Ontbreekt er iets, of is `gh_ingelogd=nee`, stop dan en zeg dat de gebruiker eerst
-`/stack-light:installatie` draait. Staat alles er, werk het dan bij. Zeg vooraf dat Windows een
+`/stagetwo-tier1:installatie` draait. Staat alles er, werk het dan bij. Zeg vooraf dat Windows een
 paar keer vraagt of een programma wijzigingen mag aanbrengen, en dat "Ja" het antwoord is.
 
 Windows (`os=windows`):
@@ -100,7 +107,7 @@ het betekent, in hooguit drie regels; gebruik daarvoor `samenvatting` als die er
 ### 3b: alleen bij overgeslagen bestanden een vraag
 
 Is `overgeslagen` leeg, dan is er niets te kiezen: ga meteen naar 3c. Het typen van
-`/stack-light:updaten` was de toestemming voor de pull request; vraag die niet nog een keer.
+`/stagetwo-tier1:updaten` was de toestemming voor de pull request; vraag die niet nog een keer.
 
 Staat er wel iets in `overgeslagen`, dan is dat bestand van de template, maar wijkt het
 hier lokaal af: iemand heeft er iets aan veranderd. Leg dat per bestand in gewone taal
@@ -121,7 +128,7 @@ keuze: het script weigert die, omdat het hele bestand vervangen ook het eigen de
 de gebruiker zou wissen. Bied dan alleen **eigen** aan. Wil de gebruiker toch de versie
 van de template, dan zet hij eerst zelf de markeringen terug in dat bestand (je mag
 uitleggen waar ze horen: als commentaarregels om het stuk dat van de template komt) en
-draait hij daarna `/stack-light:updaten` opnieuw.
+draait hij daarna `/stagetwo-tier1:updaten` opnieuw.
 
 ### 3c: uitvoeren
 
@@ -138,7 +145,7 @@ eigen GitHub en opent de pull request, of werkt een bestaande bij.
 
 Komt hier `mislukt` of `gestopt` terug, dan handel je dat net zo af als in 3a:
 geef `reden` door en ga door naar deel 4. De tijdelijke kopie is dan al opgeruimd; wil
-de gebruiker het opnieuw proberen, dan draait hij later `/stack-light:updaten` opnieuw. Ga bij `gepusht` door naar 3d.
+de gebruiker het opnieuw proberen, dan draait hij later `/stagetwo-tier1:updaten` opnieuw. Ga bij `gepusht` door naar 3d.
 
 ### 3d: wat je onthoudt voor het eind
 

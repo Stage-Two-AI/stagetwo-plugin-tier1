@@ -1,6 +1,6 @@
 ---
 name: nieuwe-app
-description: Een nieuwe lichte app starten op de manier van Stage Two (één Cloudflare Worker met eigen servercode, een D1-database en R2-bestanden) - eerst meedenken over wat de app moet doen, dan de app aanmaken uit de nieuwste light-template van Stage Two onder de organisatie van de gebruiker, en Worker, deur, database en bestanden laten inrichten door de beheer-repo. Gebruik dit als de gebruiker /stack-light:nieuwe-app typt of een nieuwe, losstaande app wil beginnen (niet een uitbreiding van een bestaande app).
+description: Een nieuwe lichte app starten op de manier van Stage Two (één Cloudflare Worker met eigen servercode, een D1-database en R2-bestanden) - eerst meedenken over wat de app moet doen, dan de app aanmaken uit de nieuwste light-template van Stage Two onder de organisatie van de gebruiker, en Worker, deur, database en bestanden laten inrichten door de beheer-repo. Gebruik dit als de gebruiker /stagetwo-tier1:nieuwe-app typt of een nieuwe, losstaande app wil beginnen (niet een uitbreiding van een bestaande app).
 ---
 
 Je helpt iemand die niet technisch is om een nieuwe app goed te beginnen. Het gesprek
@@ -22,7 +22,7 @@ Vraag wat de gebruiker wil maken, in één of twee zinnen. Toets het aan dit lij
 De regel erachter is simpel en de gebruiker mag hem horen: **één app per verzameling
 gegevens.** Gegevens die op twee plekken staan gaan uit elkaar lopen, en een app die de
 gegevens van een andere app gebruikt is voor iedereen moeilijker te overzien. Is het een
-uitbreiding? Zeg dat, en verwijs naar `/stack-light:verder-werken` in de map van die app. Stop
+uitbreiding? Zeg dat, en verwijs naar `/stagetwo-tier1:verder-werken` in de map van die app. Stop
 dan hier.
 
 Wil de gebruiker toch een aparte app op de gegevens van een bestaande app, bijvoorbeeld
@@ -68,7 +68,7 @@ echte gegevens raakt. Dat kost per app vrijwel niets.
 - **Wie erbij mag.** Lees de groepen uit de toegangslijst:
   `gh api repos/<beheer-repo>/contents/toegang.json -H "Accept: application/vnd.github.raw"`.
   De beheer-repo is de repo van de organisatie met "beheer" in de naam en het bestand
-  `beheer/inrichten-light.mjs` (meestal `stagetwo-beheer`; `gh repo list <eigenaar> --json name -q '.[].name'`).
+  `beheer/inrichten-light.mjs` (meestal `stagetwo-beheer-tier1`; `gh repo list <eigenaar> --json name -q '.[].name'`).
   Zijn er meer, één per Cloudflare-account, vraag dan welke: de README van elke beheer-repo
   zegt voor welk account en welke domeinen hij is. Onthoud de keuze voor stap 5b.
   Staat de naam van de app al onder `apps`, dan is dit al geregeld; zeg dat. Zo niet, toon
@@ -96,7 +96,7 @@ Het antwoord is één JSON-object met een `status`.
 
 Zeg dan: "Ik maak hem nu aan; dat duurt een paar minuten." Draai hetzelfde commando met
 `--doe-het` in plaats van `--droogloop`. Vraag geen toestemming meer; het typen van
-`/stack-light:nieuwe-app` en de bevestiging van het plan waren de opdracht.
+`/stagetwo-tier1:nieuwe-app` en de bevestiging van het plan waren de opdracht.
 
 Het script zet zelf de namen in `wrangler.jsonc`: de Worker heet zoals de app, de database
 en de bestanden heten `<naam>` en voor de previews `<naam>-test`. De id's van de databases
@@ -159,7 +159,7 @@ Zeg tot slot, in deze volgorde:
 
 1. Open de nieuwe map in Claude Code (Bestand, map openen). De afspraken en de bewaker
    van de werkwijze werken alleen in de map van de app zelf.
-2. Typ daar `/stack-light:verder-werken` en beschrijf de eerste versie uit stap 2.
+2. Typ daar `/stagetwo-tier1:verder-werken` en beschrijf de eerste versie uit stap 2.
    Komen er gegevens in, dan begint dat werk met de eerste tabellen: een migratie in
    `migrations/` (de route `docs/routes/databasewijziging.md`) en de servercode in
    `worker/` die ze leest en schrijft. De eerste merge zet de app echt neer.
