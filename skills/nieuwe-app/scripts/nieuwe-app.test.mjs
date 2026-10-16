@@ -21,6 +21,10 @@ import {
   lichteBeheerRepos,
   regelOmgevingen,
   voegAppToe,
+  controleerPaden,
+  padenZin,
+  zorgVoorAppInstallatie,
+  appZietRepoNiet,
   vulIn,
   zetCloudflareNamen,
 } from "./nieuwe-app.mjs";
@@ -159,6 +163,84 @@ test("toegang.json: staat de app erin, en toevoegen laat de rest precies staan",
   assert.equal(na.$beschrijving, toegang.$beschrijving);
   assert.deepEqual(na.groepen, toegang.groepen);
   assert.deepEqual(toegang.apps, { oud: ["it"] }, "het origineel blijft onaangeroerd");
+});
+
+test("toegang.json: ook de lange vorm met publieke paden telt als 'staat erin'", () => {
+  // Echt geval (anjevangelder, 16-10-2026): na de merge gaf --inrichten ten onrechte kies-groepen.
+  const toegang = {
+    groepen: { christijn: { adressen: ["c@voorbeeld.nl"] } },
+    apps: {
+      site: { groepen: ["christijn"], publiek: ["/*"], dicht: ["/beheer", "/api/beheer/*"] },
+      zonder: { publiek: ["/*"] },
+    },
+  };
+  assert.equal(controleerToegang(toegang, "site").staatErin, true);
+  assert.equal(controleerToegang(toegang, "zonder").staatErin, false, "zonder groepen telt niet");
+});
+
+test("toegang.json: met --publiek de lange vorm, zonder de korte", () => {
+  const toegang = { groepen: { kantoor: {} }, apps: {} };
+  assert.deepEqual(voegAppToe(toegang, "a", ["kantoor"]).apps.a, ["kantoor"]);
+  assert.deepEqual(voegAppToe(toegang, "a", ["kantoor"], { publiek: ["/*"], dicht: ["/beheer", "/beheer/*"] }).apps.a, {
+    groepen: ["kantoor"],
+    publiek: ["/*"],
+    dicht: ["/beheer", "/beheer/*"],
+  });
+  assert.deepEqual(voegAppToe(toegang, "a", ["kantoor"], { publiek: ["/galerij/*"] }).apps.a, {
+    groepen: ["kantoor"],
+    publiek: ["/galerij/*"],
+  });
+  assert.match(padenZin({ publiek: ["/*"], dicht: ["/beheer"] }), /hele app is publiek, behalve `\/beheer`/);
+  assert.equal(padenZin({}), "");
+});
+
+test("argumenten: --publiek en --dicht volgen de regels van de beheer-repo", () => {
+  const a = leesArgumenten(["--inrichten", "--naam", "site", "--eigenaar", "Org", "--groepen", "k", "--publiek", "/*", "--dicht", "/beheer, /beheer/*,/api/beheer/*"]);
+  assert.deepEqual(a.publiek, ["/*"]);
+  assert.deepEqual(a.dicht, ["/beheer", "/beheer/*", "/api/beheer/*"]);
+  assert.equal(controleerArgumenten(a), null);
+  assert.equal(controleerPaden(["/galerij", "/api/feed/*"], []), null);
+  assert.match(controleerPaden(["/"], []), /met \/ beginnen/);
+  assert.match(controleerPaden(["/a*b"], []), /met \/ beginnen/);
+  assert.match(controleerPaden(["/*", "/x"], []), /hele site/);
+  assert.match(controleerPaden([], ["/beheer"]), /alleen bij --publiek/);
+  assert.match(controleerPaden(["/galerij"], ["/beheer"]), /alleen bij --publiek/);
+});
+
+test("GitHub App: zet de app-repo erbij als de App alleen gekozen repo's ziet", () => {
+  const nep = (repos, { magNiet = false } = {}) => {
+    const aanroepen = [];
+    const gh = (args) => {
+      aanroepen.push(args.join(" "));
+      if (args[1].startsWith("orgs/")) {
+        if (magNiet) throw new Error("HTTP 403");
+        return [
+          { id: 1, app_slug: "claude", repository_selection: "all" },
+          { id: 2, app_slug: "beheer-app", repository_selection: "selected" },
+        ];
+      }
+      if (args[1].startsWith("user/installations/2/repositories?")) return repos.map((name) => ({ name }));
+      if (args[1] === "repos/Org/site") return { id: 99 };
+      if (args.includes("PUT")) return null;
+      throw new Error(`onverwacht: ${args.join(" ")}`);
+    };
+    return { gh, aanroepen };
+  };
+  const a = nep(["beheer-tier1", "oud"]);
+  assert.deepEqual(zorgVoorAppInstallatie("Org", "Org/beheer-tier1", "Org/site", a.gh), { status: "toegevoegd", app: "beheer-app" });
+  assert.ok(a.aanroepen.some((x) => x.includes("-X PUT user/installations/2/repositories/99")));
+
+  const b = nep(["beheer-tier1", "site"]);
+  assert.equal(zorgVoorAppInstallatie("Org", "Org/beheer-tier1", "Org/site", b.gh).status, "goed");
+  assert.ok(!b.aanroepen.some((x) => x.includes("PUT")), "staat er al: niets doen");
+
+  assert.equal(zorgVoorAppInstallatie("Org", "Org/beheer-tier1", "Org/site", nep([], { magNiet: true }).gh).status, "onbekend", "geen owner: gewoon door");
+  assert.equal(zorgVoorAppInstallatie("Org", "Org/beheer-tier1", "Org/site", nep(["iets-anders"]).gh).status, "goed", "niet de App van deze beheer-repo");
+});
+
+test("GitHub App: herkent in het logboek dat de App de repo niet ziet", () => {
+  assert.equal(appZietRepoNiet("##[error]Not Found - https://docs.github.com/rest/apps/apps#get-a-repository-installation-for-the-authenticated-app"), true);
+  assert.equal(appZietRepoNiet("INRICHTING {}"), false);
 });
 
 // Een verkleinde wrangler.jsonc in de vorm van de light-template: commentaar, de proefnamen,

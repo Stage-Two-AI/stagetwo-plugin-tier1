@@ -30,10 +30,11 @@ een portaal voor mensen van buiten? Dat kan, maar dat is een keuze met een eigen
 beveiligingsopzet, en die maakt Stage Two samen met de gebruiker. Verwijs naar Stage Two
 en stop hier.
 
-Moet de app **vindbaar zijn in Google** (een website, een webshop)? Dan past deze template
-meestal niet: die is voor apps achter een login, met hooguit een paar publieke pagina's
-(een galerij, een contactformulier). Is het vooral een openbare website, zeg dat en
-verwijs naar Stage Two. Stop dan hier.
+Is het een **openbare website** (vindbaar in Google, zonder inlog)? Dat kan prima: de hele
+app wordt dan publiek en alleen een beheerdeel (bijvoorbeeld `/beheer`) blijft achter de
+deur, zoals bij stagetwo.nl en de fotografiesite. Onthoud het voor stap 4. Alleen bij een
+**webshop met betalingen** of een site waar bezoekers een eigen account krijgen, verwijs je
+naar Stage Two: dat vraagt een eigen opzet voor betalingen of inloggen. Stop dan hier.
 
 ## Stap 2: het idee scherp
 
@@ -52,7 +53,8 @@ het duurste antwoord.
 
 Hier is niets te kiezen; zeg het in twee zinnen. Elke app staat achter een deur: alleen
 de mensen uit de toegangslijst van het bedrijf komen erin, en ze loggen in met hun
-werkaccount (of met een code per mail); losse pagina's kunnen later publiek worden. En
+werkaccount (of met een code per mail); losse pagina's, of bij een openbare site alles
+behalve het beheerdeel, kunnen publiek zijn. En
 elke app krijgt bij Cloudflare een eigen database (D1) en een eigen plek voor bestanden
 (R2), twee keer: één voor het echte werk en één voor de previews, zodat een test nooit
 echte gegevens raakt. Dat kost per app vrijwel niets.
@@ -74,6 +76,10 @@ echte gegevens raakt. Dat kost per app vrijwel niets.
   Staat de naam van de app al onder `apps`, dan is dit al geregeld; zeg dat. Zo niet, toon
   dan de groepen (met wie erin zit, in gewone woorden) en laat de gebruiker kiezen. Zijn
   er geen groepen, dan maakt Stage Two die aan; ga gewoon door, stap 5b meldt het.
+- **Openbaar of achter de deur.** Standaard staat alles achter de deur. Is het een openbare
+  site (stap 1), stel dan voor: alles publiek, en `/beheer`, `/beheer/*` en `/api/beheer/*`
+  dicht. Zijn het maar een paar publieke pagina's, noem die (bijvoorbeeld `/galerij/*`).
+  Onthoud het voor stap 5b. Een pad begint met `/`, met hooguit een `*` aan het eind.
 - **Map.** De app komt als nieuwe submap met de naam van de app onder de map die nu open
   staat. Zeg dat.
 
@@ -128,11 +134,14 @@ Probeer dat nooit zelf te doen, ook niet als `wrangler` op deze computer staat.
 Draai:
 
 ```sh
-node "${CLAUDE_SKILL_DIR}/scripts/nieuwe-app.mjs" --json --inrichten --naam "<naam>" --eigenaar "<eigenaar>" [--groepen "<groep1>,<groep2>"] [--beheer "<beheer-repo>"]
+node "${CLAUDE_SKILL_DIR}/scripts/nieuwe-app.mjs" --json --inrichten --naam "<naam>" --eigenaar "<eigenaar>" [--groepen "<groep1>,<groep2>"] [--publiek "<pad>,<pad>"] [--dicht "<pad>,<pad>"] [--beheer "<beheer-repo>"]
 ```
 
-`--groepen` alleen als de app nog niet in de toegangslijst stond (stap 4). Zeg vooraf dat
-dit een paar minuten kan duren. Het antwoord:
+`--groepen` alleen als de app nog niet in de toegangslijst stond (stap 4), en dan ook de
+paden uit stap 4: voor een openbare site `--publiek "/*" --dicht "/beheer,/beheer/*,/api/beheer/*"`,
+voor een paar publieke pagina's alleen `--publiek` met die paden. Het script zet de app-repo
+zelf bij de GitHub App van de beheer-repo als dat nodig is. Zeg vooraf dat dit een paar
+minuten kan duren. Het antwoord:
 
 - `kies-beheer`: de organisatie heeft meer beheer-repo's (`beheerRepos`). Gebruik de keuze uit
   stap 4, of vraag het nu, en draai opnieuw met `--beheer <naam zonder eigenaar>`.
@@ -142,7 +151,8 @@ dit een paar minuten kan duren. Het antwoord:
 - `wacht-op-toegang`: er staat nu een pull request op de beheer-repo (`pr`) die de app
   aan de toegangslijst toevoegt. Zeg dat de eigenaar van de beheer-repo die moet
   goedkeuren en mergen (zo beslist een mens wie bij een app mag), en dat je daarna
-  hetzelfde commando nog een keer draait, zonder `--groepen`. Je kunt intussen al bouwen.
+  hetzelfde commando nog een keer draait, zonder `--groepen`, `--publiek` en `--dicht`. Je
+  kunt intussen al bouwen.
 - `geen-beheer`: deze organisatie heeft (nog) geen beheer-repo. Zeg dat Stage Two de
   hosting, de database en de bestanden inricht, en loop de `nogTeDoen` van stap 5 langs.
 - `mislukt`: geef `reden` door, met de `url` van de run als die er is. De app zelf is

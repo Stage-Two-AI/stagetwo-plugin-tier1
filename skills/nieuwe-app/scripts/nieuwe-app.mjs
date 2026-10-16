@@ -23,13 +23,17 @@
  *       met een pull request. Op de computer van de gebruiker komt bewust geen
  *       Cloudflare-toegang (GitHub blijft de enige poort).
  *
- *   node nieuwe-app.mjs --json --inrichten --naam <naam> --eigenaar <org> [--groepen a,b] [--beheer <repo>]
+ *   node nieuwe-app.mjs --json --inrichten --naam <naam> --eigenaar <org> [--groepen a,b]
+ *        [--publiek "/*"] [--dicht "/beheer,/beheer/*,/api/beheer/*"] [--beheer <repo>]
  *       kijkt eerst of de app in toegang.json van <org>/stagetwo-beheer-tier1 staat. Zo niet, dan
- *       opent het een pull request op stagetwo-beheer-tier1 die hem toevoegt met de gekozen groepen
- *       (status `wacht-op-toegang`; de eigenaar keurt goed, daarna opnieuw draaien). Staat
- *       hij erin, dan start het de workflow "App inrichten" in <org>/stagetwo-beheer-tier1, wacht tot
- *       hij klaar is en leest het resultaat uit het logboek. Zo komen de Worker, de deur, D1
- *       en R2 erbij zonder dat er een Cloudflare-sleutel op deze computer staat.
+ *       opent het een pull request op stagetwo-beheer-tier1 die hem toevoegt met de gekozen groepen,
+ *       en met de publieke paden als die zijn meegegeven (een openbare site: `--publiek "/*"` met
+ *       onder `--dicht` wat achter de deur blijft); status `wacht-op-toegang`, de eigenaar keurt
+ *       goed, daarna opnieuw draaien. Staat hij erin, dan zet het de app-repo zo nodig bij de
+ *       GitHub App van de beheer-repo, start het de workflow "App inrichten" in
+ *       <org>/stagetwo-beheer-tier1, wacht tot hij klaar is en leest het resultaat uit het
+ *       logboek. Zo komen de Worker, de deur, D1 en R2 erbij zonder dat er een
+ *       Cloudflare-sleutel op deze computer staat.
  *
  * Elke uitkomst is één JSON-object op stdout met een `status`:
  *   klaar        (na --droogloop) alles staat klaar; zie `plan`
@@ -74,6 +78,8 @@ export function leesArgumenten(argv) {
     omschrijving: null,
     map: null,
     groepen: null,
+    publiek: null,
+    dicht: null,
     beheer: null,
   };
   const metWaarde = {
@@ -82,6 +88,8 @@ export function leesArgumenten(argv) {
     "--omschrijving": "omschrijving",
     "--map": "map",
     "--groepen": "groepen",
+    "--publiek": "publiek",
+    "--dicht": "dicht",
     "--beheer": "beheer",
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -101,7 +109,9 @@ export function leesArgumenten(argv) {
       i += 1;
     } else throw new Error(`onbekende optie: ${a}`);
   }
-  if (uit.groepen !== null) uit.groepen = uit.groepen.split(",").map((g) => g.trim()).filter(Boolean);
+  for (const veld of ["groepen", "publiek", "dicht"]) {
+    if (uit[veld] !== null) uit[veld] = uit[veld].split(",").map((g) => g.trim()).filter(Boolean);
+  }
   return uit;
 }
 
@@ -124,8 +134,31 @@ export function controleerArgumenten(arg) {
   if (arg.groepen && !arg.groepen.every((g) => /^[a-z0-9][a-z0-9-]{0,40}$/.test(g))) {
     return "--groepen: namen van groepen uit toegang.json, met komma's (kleine letters, cijfers, streepjes)";
   }
+  const padFout = controleerPaden(arg.publiek ?? [], arg.dicht ?? []);
+  if (padFout) return padFout;
   if (arg.beheer !== null && arg.beheer !== undefined && !/^[a-z0-9][a-z0-9-]{0,99}$/.test(arg.beheer)) {
     return "--beheer: de naam van de beheer-repo binnen de organisatie, zonder eigenaar (bijvoorbeeld stagetwo-beheer-tier1)";
+  }
+  return null;
+}
+
+/** Een pad voor toegang.json: begint met /, hooguit één * aan het eind, en "/*" in plaats van "/". */
+function geldigPad(pad) {
+  return /^\/[A-Za-z0-9._~\-/]*\*?$/.test(pad) && !pad.slice(0, -1).includes("*") && pad !== "/";
+}
+
+/**
+ * Dezelfde regels als de beheer-repo (beheer/lib/toegang.mjs), zodat de pull request op
+ * toegang.json niet pas daar rood wordt: geldige paden, "/*" alleen, en `dicht` alleen naast
+ * publiek "/*" (anders is alles al dicht).
+ */
+export function controleerPaden(publiek, dicht) {
+  if ([...publiek, ...dicht].some((p) => !geldigPad(p))) {
+    return '--publiek en --dicht: paden die met / beginnen, met hooguit een * aan het eind ("/*" voor de hele site), met komma\'s';
+  }
+  if (publiek.includes("/*") && publiek.length > 1) return '--publiek: "/*" is de hele site; noem er geen andere paden naast';
+  if (dicht.length > 0 && !publiek.includes("/*")) {
+    return '--dicht hoort alleen bij --publiek "/*": zonder dat is alles al dicht';
   }
   return null;
 }
@@ -501,13 +534,85 @@ export function nogTeDoenNaInrichting({ resultaat }) {
  */
 export function controleerToegang(toegang, app) {
   const groepen = Object.keys(toegang?.groepen ?? {});
-  const gekozen = toegang?.apps?.[app];
+  // Twee vormen: een lijst groepen, of een object met groepen en publieke paden.
+  const waarde = toegang?.apps?.[app];
+  const gekozen = Array.isArray(waarde) ? waarde : waarde?.groepen;
   return { staatErin: Array.isArray(gekozen) && gekozen.length > 0, groepen };
 }
 
-/** toegang.json met de app erbij; de rest blijft precies staan. */
-export function voegAppToe(toegang, app, groepen) {
-  return { ...toegang, apps: { ...(toegang.apps ?? {}), [app]: [...groepen] } };
+/**
+ * toegang.json met de app erbij; de rest blijft precies staan. Zonder publieke paden de korte
+ * vorm (een lijst groepen), met publieke paden de lange: `{ groepen, publiek, dicht }`.
+ */
+export function voegAppToe(toegang, app, groepen, { publiek = [], dicht = [] } = {}) {
+  const waarde = publiek.length
+    ? { groepen: [...groepen], publiek: [...publiek], ...(dicht.length ? { dicht: [...dicht] } : {}) }
+    : [...groepen];
+  return { ...toegang, apps: { ...(toegang.apps ?? {}), [app]: waarde } };
+}
+
+/** Een zin over de publieke paden voor de pull request, of leeg. */
+export function padenZin({ publiek = [], dicht = [] } = {}) {
+  if (!publiek.length) return "";
+  const lijst = (l) => l.map((p) => `\`${p}\``).join(", ");
+  if (publiek.includes("/*")) {
+    return dicht.length
+      ? ` De hele app is publiek, behalve ${lijst(dicht)}: dat blijft achter de deur.`
+      : " De hele app is publiek: iedereen kan erbij, zonder inlog.";
+  }
+  return ` Publiek, zonder inlog: ${lijst(publiek)}.`;
+}
+
+/**
+ * Ziet de GitHub App van de beheer-repo de app-repo? Bij een klant staat die App op "All
+ * repositories", maar een organisatie met ook andere repo's (zoals Stage-Two-AI) kiest
+ * "Only select repositories". Dan moet elke nieuwe app-repo erbij, anders stopt App
+ * inrichten bij het token. Geeft { status: "goed" | "toegevoegd" | "onbekend" | "mislukt" }.
+ * "onbekend": de gebruiker mag de installaties niet zien (geen owner); dan gaat het gewoon door.
+ */
+export function zorgVoorAppInstallatie(eigenaar, beheer, repo, gh = ghJsonOfNiets) {
+  let installaties;
+  try {
+    installaties = gh(["api", `orgs/${eigenaar}/installations?per_page=100`, "-q", ".installations"]);
+  } catch {
+    return { status: "onbekend" };
+  }
+  const beheerNaam = beheer.split("/")[1];
+  const appNaam = repo.split("/")[1];
+  for (const inst of installaties ?? []) {
+    if (inst.repository_selection !== "selected") continue;
+    let repos;
+    try {
+      repos = gh(["api", `user/installations/${inst.id}/repositories?per_page=100`, "-q", ".repositories"]);
+    } catch {
+      continue;
+    }
+    if (!repos.some((r) => r.name === beheerNaam)) continue;
+    if (repos.some((r) => r.name === appNaam)) return { status: "goed", app: inst.app_slug };
+    try {
+      const id = gh(["api", `repos/${repo}`, "-q", "{id: .id}"]).id;
+      gh(["api", "-X", "PUT", `user/installations/${inst.id}/repositories/${id}`, "--silent"]);
+      return { status: "toegevoegd", app: inst.app_slug };
+    } catch (f) {
+      return {
+        status: "mislukt",
+        app: inst.app_slug,
+        reden: `de GitHub App ${inst.app_slug} van ${beheer} ziet ${repo} nog niet, en toevoegen lukte niet (${foutTekst(f)}); een owner van ${eigenaar} zet hem erbij: Settings, GitHub Apps, ${inst.app_slug}, Configure, Repository access`,
+      };
+    }
+  }
+  return { status: "goed" };
+}
+
+/** `gh` met JSON-uitvoer; lege uitvoer (een PUT zonder antwoord) is null. */
+function ghJsonOfNiets(args) {
+  const uit = sh("gh", args);
+  return uit ? JSON.parse(uit) : null;
+}
+
+/** Herkent in het logboek van App inrichten dat de GitHub App de app-repo niet ziet. */
+export function appZietRepoNiet(logtekst) {
+  return /get-a-repository-installation/.test(String(logtekst ?? ""));
 }
 
 function slaap(ms) {
@@ -533,7 +638,8 @@ function vraagToegangAan(beheer, arg, toegang, sha) {
   } catch {
     // De branch bestaat al van een eerdere poging; dan schrijven we daarop verder.
   }
-  const nieuw = `${JSON.stringify(voegAppToe(toegang, arg.naam, arg.groepen), null, 2)}\n`;
+  const paden = { publiek: arg.publiek ?? [], dicht: arg.dicht ?? [] };
+  const nieuw = `${JSON.stringify(voegAppToe(toegang, arg.naam, arg.groepen, paden), null, 2)}\n`;
   let huidigSha = sha;
   try {
     huidigSha = sh("gh", ["api", `repos/${beheer}/contents/toegang.json?ref=${branch}`, "-q", ".sha"]);
@@ -550,7 +656,7 @@ function vraagToegangAan(beheer, arg, toegang, sha) {
   return sh("gh", [
     "pr", "create", "--repo", beheer, "--base", "main", "--head", branch,
     "--title", `Toegang: ${arg.naam}`,
-    "--body", `De nieuwe app **${arg.naam}** komt in toegang.json, voor de groep(en) ${arg.groepen.map((g) => `\`${g}\``).join(", ")}.\n\nAangevraagd met /stagetwo-tier1:nieuwe-app. Na goedkeuring en merge kan de app worden ingericht.`,
+    "--body", `De nieuwe app **${arg.naam}** komt in toegang.json, voor de groep(en) ${arg.groepen.map((g) => `\`${g}\``).join(", ")}.${padenZin(paden)}\n\nAangevraagd met /stagetwo-tier1:nieuwe-app. Na goedkeuring en merge kan de app worden ingericht.`,
   ]);
 }
 
@@ -620,6 +726,9 @@ export function richtIn(arg, { cwd = process.cwd(), wachtMs = 5000, maxWachtMinu
     }
   }
 
+  const installatie = zorgVoorAppInstallatie(arg.eigenaar, beheer, repo);
+  if (installatie.status === "mislukt") return { status: "mislukt", repo, reden: installatie.reden };
+
   const start = new Date();
   try {
     sh("gh", ["workflow", "run", BEHEER_WORKFLOW, "--repo", beheer, "-f", `app=${arg.naam}`, "-f", "droogloop=false"], { cwd });
@@ -656,6 +765,13 @@ export function richtIn(arg, { cwd = process.cwd(), wachtMs = 5000, maxWachtMinu
     log = "";
   }
   const resultaat = leesInrichting(log);
+  if (!resultaat && appZietRepoNiet(log)) {
+    return {
+      status: "mislukt",
+      reden: `de GitHub App van ${beheer} ziet ${repo} niet; een owner van ${arg.eigenaar} zet de repo erbij (Settings, GitHub Apps, Configure, Repository access), daarna draai je --inrichten opnieuw`,
+      url: run.url,
+    };
+  }
   if (!resultaat) return { status: "mislukt", reden: `geen resultaat gevonden in het logboek van de workflow; kijk op ${run.url}`, url: run.url };
   if (resultaat.status !== "gelukt") {
     return { status: "mislukt", reden: resultaat.reden ?? "de inrichting is mislukt", url: run.url };
