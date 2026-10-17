@@ -1,6 +1,6 @@
 ---
 name: nieuwe-app
-description: Een nieuwe lichte app starten op de manier van Stage Two (één Cloudflare Worker met eigen servercode, een D1-database en R2-bestanden) - eerst meedenken over wat de app moet doen, dan de app aanmaken uit de nieuwste light-template van Stage Two onder de organisatie van de gebruiker, en Worker, deur, database en bestanden laten inrichten door de beheer-repo. Gebruik dit als de gebruiker /stagetwo-tier1:nieuwe-app typt of een nieuwe, losstaande app wil beginnen (niet een uitbreiding van een bestaande app).
+description: Een nieuwe app starten op tier 1 van Stage Two (één Cloudflare Worker met eigen servercode, een D1-database en R2-bestanden) - eerst meedenken over wat de app moet doen, dan de app aanmaken uit de nieuwste template voor tier 1 van Stage Two onder de organisatie van de gebruiker, en Worker, deur, database en bestanden laten inrichten door de beheer-repo. Gebruik dit als de gebruiker /stagetwo-tier1:nieuwe-app typt of een nieuwe, losstaande app wil beginnen (niet een uitbreiding van een bestaande app).
 ---
 
 Je helpt iemand die niet technisch is om een nieuwe app goed te beginnen. Het gesprek
@@ -75,7 +75,8 @@ echte gegevens raakt. Dat kost per app vrijwel niets.
   zegt voor welk account en welke domeinen hij is. Onthoud de keuze voor stap 5b.
   Staat de naam van de app al onder `apps`, dan is dit al geregeld; zeg dat. Zo niet, toon
   dan de groepen (met wie erin zit, in gewone woorden) en laat de gebruiker kiezen. Zijn
-  er geen groepen, dan maakt Stage Two die aan; ga gewoon door, stap 5b meldt het.
+  er geen groepen, dan maakt de owner van de organisatie die aan (tijdens het project
+  Stage Two); ga gewoon door, stap 5b meldt het.
 - **Openbaar of achter de deur.** Standaard staat alles achter de deur. Is het een openbare
   site (stap 1), stel dan voor: alles publiek, en `/beheer`, `/beheer/*` en `/api/beheer/*`
   dicht. Zijn het maar een paar publieke pagina's, noem die (bijvoorbeeld `/galerij/*`).
@@ -127,7 +128,7 @@ hier niet zelf aan.
 
 De Worker, de deur (Access), de databases (D1) en de bestanden (R2), voor productie en voor
 de previews, worden ingericht door de workflow **App inrichten** in de beheer-repo van de
-organisatie (het script zoekt hem zelf en neemt alleen een beheer-repo van het lichte spoor), op
+organisatie (het script zoekt hem zelf en neemt alleen een beheer-repo voor tier 1), op
 GitHub. Daar staan alle sleutels; op deze computer komt bewust geen Cloudflare-toegang.
 Probeer dat nooit zelf te doen, ook niet als `wrangler` op deze computer staat.
 
@@ -173,5 +174,7 @@ Zeg tot slot, in deze volgorde:
    Komen er gegevens in, dan begint dat werk met de eerste tabellen: een migratie in
    `migrations/` (de route `docs/routes/databasewijziging.md`) en de servercode in
    `worker/` die ze leest en schrijft. De eerste merge zet de app echt neer.
-3. Laat Stage Two weten dat deze app bestaat (naam en link), zodat hij in het overzicht
-   komt en meedoet met updates van de werkwijze.
+3. Laat Stage Two weten dat deze app bestaat (naam en link). Na de overdracht zet de
+   owner van de organisatie de app ook bij de repo's waarop de GitHub App
+   `stagetwo-levering` staat. Dan zet Stage Two er, zolang het abonnement loopt, ook de
+   update-voorstellen voor klaar.

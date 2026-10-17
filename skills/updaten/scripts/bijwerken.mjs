@@ -168,10 +168,10 @@ export function anderSpoor(manifest) {
   const variant = manifest && typeof manifest === "object" ? manifest.variant : undefined;
   const reden =
     variant === "cloudflare"
-      ? "deze app komt uit de Cloudflare-template van Stage Two (met Supabase); die werk je bij met /stagetwo-tier2:updaten van de andere Stage Two-plugin, niet met deze"
+      ? "deze app komt uit de template voor tier 2 van Stage Two (Cloudflare met Supabase); die werk je bij met /stagetwo-tier2:updaten van de andere Stage Two-plugin, niet met deze"
       : variant === undefined || variant === null
-        ? "deze app komt uit de Vercel-template van Stage Two; die werk je bij met /stack:updaten van de andere Stage Two-plugin, niet met deze"
-        : `deze app heeft variant ${JSON.stringify(variant)} in .claude/stack-manifest.json en is niet van tier 1; deze plugin werkt alleen apps met variant "light" bij`;
+        ? "deze app komt uit een oudere template van Stage Two die deze plugin niet bijwerkt; vraag Stage Two hoe deze app bij te werken"
+        : `deze app heeft variant ${JSON.stringify(variant)} in .claude/stack-manifest.json en is niet van tier 1; deze plugin werkt alleen apps uit de template voor tier 1 bij`;
   return { status: "ander-spoor", reden };
 }
 
@@ -351,7 +351,7 @@ export function voerUit({ werkmap, losOp }) {
       return mislukt("git kent je naam en e-mailadres niet; stel ze in met `git config --global user.name` en `user.email`");
     }
     const eind = { ...resultaat, overgeslagen: nogOvergeslagen, opgelost };
-    commit({ map: kloon, identiteit, bericht: `chore: stack-template naar versie ${resultaat.naar}`, versie: resultaat.naar });
+    commit({ map: kloon, identiteit, bericht: `chore: template naar versie ${resultaat.naar}`, versie: resultaat.naar });
 
     // Tussen de droogloop en nu kan iemand op de branch hebben gecommit; ook dan blijven we ervan af.
     if (!branchHerbouwbaar(kloon, branch)) {
