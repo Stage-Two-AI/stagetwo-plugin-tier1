@@ -11,7 +11,7 @@
  * kiezen: elke app heeft ze allebei.
  *
  *   node nieuwe-app.mjs --json --droogloop --naam <naam> --eigenaar <org> \
- *        [--omschrijving "..."] [--map <map>]
+ *        [--omschrijving "..."] [--organisatie "<bedrijfsnaam>"] [--map <map>]
  *       voorcontrole: staat alles klaar, bestaat de repo nog niet, waar landt hij, wie
  *       wordt reviewer. Maakt niets aan.
  *
@@ -19,6 +19,10 @@
  *       repo aanmaken uit de template, klonen, invullen, in wrangler.jsonc de Worker-naam
  *       en de namen van database en bestanden zetten (<naam> en <naam>-test), pakketten
  *       installeren, committen met de identiteit van de gebruiker, pushen, main beschermen.
+ *       Daarbij wijst .claude/settings.json naar de plugin uit levering.json (de kopie in de
+ *       org van de klant, zie lib/plugin-bron.mjs), en krijgt de app een LICENSE op naam van
+ *       de organisatie (--organisatie, anders de naam van de org op GitHub); het gebruiksrecht
+ *       van Stage Two blijft in LICENSE-STAGE-TWO staan.
  *       De id's van de databases blijven de nullen uit de template: die vult App inrichten
  *       met een pull request. Op de computer van de gebruiker komt bewust geen
  *       Cloudflare-toegang (GitHub blijft de enige poort).
@@ -57,6 +61,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { LEVERING, STAGE_TWO } from "../../../lib/levering.mjs";
+import { SETTINGS_PAD, kiesPluginBron, metPluginBron } from "../../../lib/plugin-bron.mjs";
 import { ghAanwezig, ghIngelogd, git, sh } from "../../../lib/repo.mjs";
 
 /** De template uit levering.json (een abonnee), anders die van Stage Two; zie lib/levering.mjs. */
@@ -76,6 +81,7 @@ export function leesArgumenten(argv) {
     naam: null,
     eigenaar: null,
     omschrijving: null,
+    organisatie: null,
     map: null,
     groepen: null,
     publiek: null,
@@ -86,6 +92,7 @@ export function leesArgumenten(argv) {
     "--naam": "naam",
     "--eigenaar": "eigenaar",
     "--omschrijving": "omschrijving",
+    "--organisatie": "organisatie",
     "--map": "map",
     "--groepen": "groepen",
     "--publiek": "publiek",
@@ -139,7 +146,16 @@ export function controleerArgumenten(arg) {
   if (arg.beheer !== null && arg.beheer !== undefined && !/^[a-z0-9][a-z0-9-]{0,99}$/.test(arg.beheer)) {
     return "--beheer: de naam van de beheer-repo binnen de organisatie, zonder eigenaar (bijvoorbeeld stagetwo-beheer-tier1)";
   }
+  if (arg.organisatie !== null && arg.organisatie !== undefined && !geldigeOrganisatie(arg.organisatie)) {
+    return "--organisatie: de naam van het bedrijf, op één regel en hooguit 100 tekens (bijvoorbeeld \"Richplant B.V.\")";
+  }
   return null;
+}
+
+/** Een bedrijfsnaam voor de LICENSE: één regel, 2 tot 100 tekens, geen markeringen. */
+export function geldigeOrganisatie(naam) {
+  const n = String(naam ?? "").trim();
+  return n.length >= 2 && n.length <= 100 && !/[\r\n<>]/.test(n);
 }
 
 /** Een pad voor toegang.json: begint met /, hooguit één * aan het eind, en "/*" in plaats van "/". */
@@ -239,6 +255,60 @@ export function zetCloudflareNamen(map, naam) {
   writeFileSync(pad, tekst);
 }
 
+/**
+ * Zet in .claude/settings.json de bron van de plugin op de leveringsrepo uit levering.json
+ * (zie lib/plugin-bron.mjs). De template draagt de bronrepo van Stage Two; een abonnee haalt
+ * de plugin uit zijn eigen kopie. Geeft de bron die er nu staat, of null zonder settings.
+ */
+export function zetPluginBron(map, levering = LEVERING.plugin) {
+  const pad = join(map, SETTINGS_PAD);
+  if (!existsSync(pad)) return null;
+  const tekst = readFileSync(pad, "utf8");
+  const bron = kiesPluginBron(tekst, levering);
+  const nieuw = metPluginBron(tekst, bron);
+  if (nieuw !== tekst) writeFileSync(pad, nieuw);
+  return bron;
+}
+
+/** De LICENSE van een nieuwe app: de eigen code is van de organisatie; Stage Two staat in LICENSE-STAGE-TWO. */
+export function licentieTekst(organisatie, jaar = new Date().getFullYear()) {
+  const naam = String(organisatie).trim();
+  const punt = naam.endsWith(".") ? "" : ".";
+  return `Licentie van deze app
+
+Copyright (c) ${jaar} ${naam}
+
+De code die specifiek voor deze app is gemaakt, zoals schermen, functies, servercode,
+databaseopzet en teksten, is van ${naam}${punt} Alle rechten voorbehouden.
+
+Een deel van de bestanden komt uit de template en de plugin van Stage Two; welke dat zijn,
+staat in .claude/stack-manifest.json onder "vanDeTemplate". Voor die onderdelen geldt het
+gebruiksrecht van Stage Two in LICENSE-STAGE-TWO. Onderdelen van derden, zoals
+open-sourcebibliotheken, vallen onder hun eigen licenties.
+
+Dit bestand is van ${naam}: het mag worden aangepast of vervangen, bijvoorbeeld door een
+open-sourcelicentie voor de eigen code. Een update van Stage Two raakt het niet aan.
+`;
+}
+
+/**
+ * Zet een LICENSE op naam van de organisatie. Alleen als de template het gebruiksrecht van
+ * Stage Two apart levert (LICENSE-STAGE-TWO, vanaf template versie 25) en de LICENSE nog die
+ * van de template is (met <organisatie>) of ontbreekt; een eigen LICENSE blijft staan, en bij
+ * een oudere template blijft alles zoals het was. Geeft { gezet, reden }.
+ */
+export function zetLicentie(map, organisatie) {
+  if (!existsSync(join(map, "LICENSE-STAGE-TWO"))) {
+    return { gezet: false, reden: "deze versie van de template heeft nog geen LICENSE-STAGE-TWO" };
+  }
+  const pad = join(map, "LICENSE");
+  if (existsSync(pad) && !readFileSync(pad, "utf8").includes("<organisatie>")) {
+    return { gezet: false, reden: "de app heeft al een eigen LICENSE" };
+  }
+  writeFileSync(pad, licentieTekst(organisatie));
+  return { gezet: true, organisatie: String(organisatie).trim() };
+}
+
 /** Wat er na het script nog te doen is. */
 export function nogTeDoen({ ruleset }) {
   const lijst = [];
@@ -290,6 +360,28 @@ function magInOrganisatie(eigenaar, gebruiker) {
   }
 }
 
+
+/**
+ * De naam voor de LICENSE: wat de gebruiker meegaf (--organisatie), anders de naam van de
+ * organisatie of het account op GitHub, anders de inlognaam.
+ */
+export function organisatieNaam(eigenaar, gegeven = null, naamOpGitHub = ghNaam) {
+  if (gegeven && geldigeOrganisatie(gegeven)) return String(gegeven).trim();
+  const opGitHub = naamOpGitHub(eigenaar);
+  return opGitHub && geldigeOrganisatie(opGitHub) ? opGitHub.trim() : eigenaar;
+}
+
+function ghNaam(eigenaar) {
+  for (const pad of [`orgs/${eigenaar}`, `users/${eigenaar}`]) {
+    try {
+      const naam = sh("gh", ["api", pad, "-q", ".name // empty"]);
+      if (naam) return naam;
+    } catch {
+      // geen organisatie, of geen naam ingevuld: volgende
+    }
+  }
+  return null;
+}
 
 function plan(eigenaar) {
   try {
@@ -835,6 +927,8 @@ export function voorcontrole(arg, { cwd = process.cwd() } = {}) {
       organisatie: org,
       githubPlan: plan(arg.eigenaar),
       template: TEMPLATE,
+      pluginBron: kiesPluginBron(null),
+      bedrijfsnaam: organisatieNaam(arg.eigenaar, arg.organisatie),
       hervatten: besluit.besluit === "hervat",
     },
   };
@@ -843,7 +937,7 @@ export function voorcontrole(arg, { cwd = process.cwd() } = {}) {
 export function doeHet(arg, { cwd = process.cwd() } = {}) {
   const controle = voorcontrole(arg, { cwd });
   if (controle.status !== "klaar") return controle;
-  const { repo, map, reviewer, gebruiker, hervatten } = controle.plan;
+  const { repo, map, reviewer, gebruiker, hervatten, bedrijfsnaam } = controle.plan;
   const uitkomst = { status: "mislukt", repo, url: controle.plan.url, hervat: hervatten };
   const opnieuw = " Draai hetzelfde commando nog een keer; het gaat verder waar het stopte. Zet niets met de hand.";
 
@@ -876,6 +970,8 @@ export function doeHet(arg, { cwd = process.cwd() } = {}) {
   }
 
   let stap = "klonen";
+  let pluginBron = null;
+  let licentie = null;
   try {
     if (!existsSync(map)) {
       mkdirSync(dirname(map), { recursive: true });
@@ -884,6 +980,8 @@ export function doeHet(arg, { cwd = process.cwd() } = {}) {
     stap = "invullen";
     vulIn(map, { naam: arg.naam, omschrijving: arg.omschrijving, reviewer });
     zetCloudflareNamen(map, arg.naam);
+    pluginBron = zetPluginBron(map);
+    licentie = zetLicentie(map, bedrijfsnaam);
     stap = "pakketten installeren (pnpm install)";
     installeer(map);
 
@@ -898,7 +996,7 @@ export function doeHet(arg, { cwd = process.cwd() } = {}) {
     email ||= `${gebruiker}@users.noreply.github.com`;
     git(map, "add", "-A");
     if (git(map, "status", "--porcelain")) {
-      git(map, "-c", `user.name=${naam}`, "-c", `user.email=${email}`, "commit", "-q", "-m", "chore: projectnaam, reviewer en de namen van Worker, database en bestanden invullen");
+      git(map, "-c", `user.name=${naam}`, "-c", `user.email=${email}`, "commit", "-q", "-m", "chore: projectnaam, reviewer, licentie, bron van de plugin en de namen van Worker, database en bestanden invullen");
     }
     git(map, "fetch", "-q", "origin");
     const tak = git(map, "rev-parse", "--abbrev-ref", "HEAD");
@@ -930,6 +1028,8 @@ export function doeHet(arg, { cwd = process.cwd() } = {}) {
     hervat: hervatten,
     ruleset,
     omgevingen,
+    pluginBron,
+    licentie,
     nogTeDoen: nogTeDoen({ ruleset }),
   };
 }
