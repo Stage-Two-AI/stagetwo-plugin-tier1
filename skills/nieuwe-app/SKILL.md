@@ -88,8 +88,12 @@ echte gegevens raakt. Dat kost per app vrijwel niets.
 Draai eerst de droogloop, met Bash, precies zo:
 
 ```sh
-node "${CLAUDE_SKILL_DIR}/scripts/nieuwe-app.mjs" --json --droogloop --naam "<naam>" --eigenaar "<eigenaar>" --omschrijving "<omschrijving>"
+node "${CLAUDE_SKILL_DIR}/scripts/nieuwe-app.mjs" --json --droogloop --naam "<naam>" --eigenaar "<eigenaar>" --omschrijving "<omschrijving>" --organisatie "<bedrijfsnaam>"
 ```
+
+`<bedrijfsnaam>` is de naam van het bedrijf waarvoor de app is, zoals je die uit het gesprek of
+de map kent (bijvoorbeeld "Richplant B.V."); die komt in de `LICENSE` van de app. Weet je hem
+niet, laat `--organisatie` dan weg: het script neemt de naam van de organisatie op GitHub.
 
 Het antwoord is één JSON-object met een `status`.
 
@@ -107,7 +111,9 @@ Zeg dan: "Ik maak hem nu aan; dat duurt een paar minuten." Draai hetzelfde comma
 Het script zet zelf de namen in `wrangler.jsonc`: de Worker heet zoals de app, de database
 en de bestanden heten `<naam>` en voor de previews `<naam>-test`. De id's van de databases
 blijven nullen; die vult App inrichten straks met een pull request. Pas `wrangler.jsonc`
-hier niet zelf aan.
+hier niet zelf aan. Het zet ook de `LICENSE` op naam van het bedrijf (het gebruiksrecht van
+Stage Two blijft in `LICENSE-STAGE-TWO`) en laat `.claude/settings.json` naar de kopie van de
+plugin in de eigen organisatie wijzen. Pas die bestanden niet zelf aan.
 
 - `mislukt`: geef `reden` door (dat is de volledige foutmelding). Staat er een `repo` in
   het antwoord, dan is de repo al aangemaakt: **draai precies hetzelfde `--doe-het`-commando
