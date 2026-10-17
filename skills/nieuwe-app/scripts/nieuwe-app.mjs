@@ -248,7 +248,7 @@ export function nogTeDoen({ ruleset }) {
     );
   }
   lijst.push(
-    "Hosting, deur, database en bestanden (Cloudflare: de Worker, Access, D1 en R2): de beheer-repo van de organisatie of Stage Two richt die in. Daar komt bewust geen toegang voor op deze computer. Tot die tijd kun je gewoon bouwen; de tests draaien tegen een lokale database.",
+    "Hosting, deur, database en bestanden (Cloudflare: de Worker, Access, D1 en R2): de beheer-repo van de organisatie richt die in (tijdens het project doet Stage Two dat). Daar komt bewust geen toegang voor op deze computer. Tot die tijd kun je gewoon bouwen; de tests draaien tegen een lokale database.",
   );
   lijst.push("Foutbewaking (Sentry): Stage Two maakt een project aan en zet de DSN als omgevingsvariabele. Mag later.");
   return lijst;
@@ -708,7 +708,7 @@ export function richtIn(arg, { cwd = process.cwd(), wachtMs = 5000, maxWachtMinu
         groepen,
         reden: groepen.length
           ? `${arg.naam} staat nog niet in toegang.json; kies wie erbij mag uit de groepen ${groepen.join(", ")} en geef die mee met --groepen`
-          : `er staan nog geen groepen in toegang.json van ${beheer}; vraag Stage Two die aan te maken`,
+          : `er staan nog geen groepen in toegang.json van ${beheer}; vraag de owner van de organisatie (tijdens het project Stage Two) die aan te maken`,
       };
     }
     const onbekend = arg.groepen.filter((g) => !groepen.includes(g));

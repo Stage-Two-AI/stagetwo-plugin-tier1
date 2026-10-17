@@ -75,7 +75,8 @@ echte gegevens raakt. Dat kost per app vrijwel niets.
   zegt voor welk account en welke domeinen hij is. Onthoud de keuze voor stap 5b.
   Staat de naam van de app al onder `apps`, dan is dit al geregeld; zeg dat. Zo niet, toon
   dan de groepen (met wie erin zit, in gewone woorden) en laat de gebruiker kiezen. Zijn
-  er geen groepen, dan maakt Stage Two die aan; ga gewoon door, stap 5b meldt het.
+  er geen groepen, dan maakt de owner van de organisatie die aan (tijdens het project
+  Stage Two); ga gewoon door, stap 5b meldt het.
 - **Openbaar of achter de deur.** Standaard staat alles achter de deur. Is het een openbare
   site (stap 1), stel dan voor: alles publiek, en `/beheer`, `/beheer/*` en `/api/beheer/*`
   dicht. Zijn het maar een paar publieke pagina's, noem die (bijvoorbeeld `/galerij/*`).
@@ -173,6 +174,7 @@ Zeg tot slot, in deze volgorde:
    Komen er gegevens in, dan begint dat werk met de eerste tabellen: een migratie in
    `migrations/` (de route `docs/routes/databasewijziging.md`) en de servercode in
    `worker/` die ze leest en schrijft. De eerste merge zet de app echt neer.
-3. Laat Stage Two weten dat deze app bestaat (naam en link), zodat hij in het overzicht
-   komt en Stage Two er, zolang het abonnement loopt, ook de update-voorstellen voor
-   klaarzet.
+3. Laat Stage Two weten dat deze app bestaat (naam en link). Na de overdracht zet de
+   owner van de organisatie de app ook bij de repo's waarop de GitHub App
+   `stagetwo-levering` staat. Dan zet Stage Two er, zolang het abonnement loopt, ook de
+   update-voorstellen voor klaar.

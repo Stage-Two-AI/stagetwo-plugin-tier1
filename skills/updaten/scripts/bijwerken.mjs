@@ -170,8 +170,8 @@ export function anderSpoor(manifest) {
     variant === "cloudflare"
       ? "deze app komt uit de template voor tier 2 van Stage Two (Cloudflare met Supabase); die werk je bij met /stagetwo-tier2:updaten van de andere Stage Two-plugin, niet met deze"
       : variant === undefined || variant === null
-        ? "deze app komt uit de oude Vercel-template van Stage Two; die werk je bij met /stack:updaten van de andere Stage Two-plugin, niet met deze"
-        : `deze app heeft variant ${JSON.stringify(variant)} in .claude/stack-manifest.json en is niet van tier 1; deze plugin werkt alleen apps met variant "light" bij`;
+        ? "deze app komt uit een oudere template van Stage Two die deze plugin niet bijwerkt; vraag Stage Two hoe deze app bij te werken"
+        : `deze app heeft variant ${JSON.stringify(variant)} in .claude/stack-manifest.json en is niet van tier 1; deze plugin werkt alleen apps uit de template voor tier 1 bij`;
   return { status: "ander-spoor", reden };
 }
 
