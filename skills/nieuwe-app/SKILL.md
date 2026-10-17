@@ -180,7 +180,7 @@ Zeg tot slot, in deze volgorde:
    Komen er gegevens in, dan begint dat werk met de eerste tabellen: een migratie in
    `migrations/` (de route `docs/routes/databasewijziging.md`) en de servercode in
    `worker/` die ze leest en schrijft. De eerste merge zet de app echt neer.
-3. Laat Stage Two weten dat deze app bestaat (naam en link). Na de overdracht zet de
-   owner van de organisatie de app ook bij de repo's waarop de GitHub App
-   `stagetwo-levering` staat. Dan zet Stage Two er, zolang het abonnement loopt, ook de
-   update-voorstellen voor klaar.
+3. Laat Stage Two weten dat deze app bestaat (naam en link), zodat Stage Two bij vragen
+   weet over welke app het gaat. Stage Two krijgt daarmee geen toegang tot de app en heeft
+   die ook niet nodig: nieuwe versies van de werkwijze haalt de gebruiker zelf in de app
+   binnen met `/stagetwo-tier1:updaten`.
