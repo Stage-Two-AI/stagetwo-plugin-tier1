@@ -174,4 +174,5 @@ Zeg tot slot, in deze volgorde:
    `migrations/` (de route `docs/routes/databasewijziging.md`) en de servercode in
    `worker/` die ze leest en schrijft. De eerste merge zet de app echt neer.
 3. Laat Stage Two weten dat deze app bestaat (naam en link), zodat hij in het overzicht
-   komt en meedoet met updates van de werkwijze.
+   komt en Stage Two er, zolang het abonnement loopt, ook de update-voorstellen voor
+   klaarzet.
