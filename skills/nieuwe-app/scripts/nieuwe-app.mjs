@@ -928,7 +928,7 @@ export function voorcontrole(arg, { cwd = process.cwd() } = {}) {
       githubPlan: plan(arg.eigenaar),
       template: TEMPLATE,
       pluginBron: kiesPluginBron(null),
-      organisatie: organisatieNaam(arg.eigenaar, arg.organisatie),
+      bedrijfsnaam: organisatieNaam(arg.eigenaar, arg.organisatie),
       hervatten: besluit.besluit === "hervat",
     },
   };
@@ -937,7 +937,7 @@ export function voorcontrole(arg, { cwd = process.cwd() } = {}) {
 export function doeHet(arg, { cwd = process.cwd() } = {}) {
   const controle = voorcontrole(arg, { cwd });
   if (controle.status !== "klaar") return controle;
-  const { repo, map, reviewer, gebruiker, hervatten, organisatie } = controle.plan;
+  const { repo, map, reviewer, gebruiker, hervatten, bedrijfsnaam } = controle.plan;
   const uitkomst = { status: "mislukt", repo, url: controle.plan.url, hervat: hervatten };
   const opnieuw = " Draai hetzelfde commando nog een keer; het gaat verder waar het stopte. Zet niets met de hand.";
 
@@ -981,7 +981,7 @@ export function doeHet(arg, { cwd = process.cwd() } = {}) {
     vulIn(map, { naam: arg.naam, omschrijving: arg.omschrijving, reviewer });
     zetCloudflareNamen(map, arg.naam);
     pluginBron = zetPluginBron(map);
-    licentie = zetLicentie(map, organisatie);
+    licentie = zetLicentie(map, bedrijfsnaam);
     stap = "pakketten installeren (pnpm install)";
     installeer(map);
 
