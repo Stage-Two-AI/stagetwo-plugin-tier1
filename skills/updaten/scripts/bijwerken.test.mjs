@@ -126,8 +126,8 @@ test("voorcontrole: gh niet ingelogd, geen netwerk, geen manifest, geen schrijfr
     writeFileSync(pad, JSON.stringify(vercel));
     const r = v.draai(["--droogloop"]);
     assert.equal(r.status, "ander-spoor");
-    assert.match(r.reden, /Vercel/);
-    assert.match(r.reden, /\/stack:updaten/);
+    assert.match(r.reden, /oudere template/);
+    assert.match(r.reden, /vraag Stage Two/);
     assert.deepEqual(v.werkmappen(), []);
   } finally {
     v.opruimen();
@@ -268,7 +268,7 @@ test("--repo: een andere app bijwerken zonder dat die op deze computer staat, me
 });
 
 test("--repo: een andere app van een ander spoor wordt na het klonen geweigerd, zonder werkmap", () => {
-  for (const [variant, plugin] of [["cloudflare", /\/stagetwo-tier2:updaten/], [undefined, /\/stack:updaten/]]) {
+  for (const [variant, plugin] of [["cloudflare", /\/stagetwo-tier2:updaten/], [undefined, /oudere template/]]) {
     const w = wereld();
     try {
       git(w.klant.checkout, "checkout", "-q", "main");

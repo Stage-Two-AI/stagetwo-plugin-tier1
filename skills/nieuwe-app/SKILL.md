@@ -1,6 +1,6 @@
 ---
 name: nieuwe-app
-description: Een nieuwe lichte app starten op de manier van Stage Two (één Cloudflare Worker met eigen servercode, een D1-database en R2-bestanden) - eerst meedenken over wat de app moet doen, dan de app aanmaken uit de nieuwste light-template van Stage Two onder de organisatie van de gebruiker, en Worker, deur, database en bestanden laten inrichten door de beheer-repo. Gebruik dit als de gebruiker /stagetwo-tier1:nieuwe-app typt of een nieuwe, losstaande app wil beginnen (niet een uitbreiding van een bestaande app).
+description: Een nieuwe app starten op tier 1 van Stage Two (één Cloudflare Worker met eigen servercode, een D1-database en R2-bestanden) - eerst meedenken over wat de app moet doen, dan de app aanmaken uit de nieuwste template voor tier 1 van Stage Two onder de organisatie van de gebruiker, en Worker, deur, database en bestanden laten inrichten door de beheer-repo. Gebruik dit als de gebruiker /stagetwo-tier1:nieuwe-app typt of een nieuwe, losstaande app wil beginnen (niet een uitbreiding van een bestaande app).
 ---
 
 Je helpt iemand die niet technisch is om een nieuwe app goed te beginnen. Het gesprek
@@ -75,7 +75,8 @@ echte gegevens raakt. Dat kost per app vrijwel niets.
   zegt voor welk account en welke domeinen hij is. Onthoud de keuze voor stap 5b.
   Staat de naam van de app al onder `apps`, dan is dit al geregeld; zeg dat. Zo niet, toon
   dan de groepen (met wie erin zit, in gewone woorden) en laat de gebruiker kiezen. Zijn
-  er geen groepen, dan maakt Stage Two die aan; ga gewoon door, stap 5b meldt het.
+  er geen groepen, dan maakt de owner van de organisatie die aan (tijdens het project
+  Stage Two); ga gewoon door, stap 5b meldt het.
 - **Openbaar of achter de deur.** Standaard staat alles achter de deur. Is het een openbare
   site (stap 1), stel dan voor: alles publiek, en `/beheer`, `/beheer/*` en `/api/beheer/*`
   dicht. Zijn het maar een paar publieke pagina's, noem die (bijvoorbeeld `/galerij/*`).
@@ -88,8 +89,12 @@ echte gegevens raakt. Dat kost per app vrijwel niets.
 Draai eerst de droogloop, met Bash, precies zo:
 
 ```sh
-node "${CLAUDE_SKILL_DIR}/scripts/nieuwe-app.mjs" --json --droogloop --naam "<naam>" --eigenaar "<eigenaar>" --omschrijving "<omschrijving>"
+node "${CLAUDE_SKILL_DIR}/scripts/nieuwe-app.mjs" --json --droogloop --naam "<naam>" --eigenaar "<eigenaar>" --omschrijving "<omschrijving>" --organisatie "<bedrijfsnaam>"
 ```
+
+`<bedrijfsnaam>` is de naam van het bedrijf waarvoor de app is, zoals je die uit het gesprek of
+de map kent (bijvoorbeeld "Richplant B.V."); die komt in de `LICENSE` van de app. Weet je hem
+niet, laat `--organisatie` dan weg: het script neemt de naam van de organisatie op GitHub.
 
 Het antwoord is één JSON-object met een `status`.
 
@@ -107,7 +112,9 @@ Zeg dan: "Ik maak hem nu aan; dat duurt een paar minuten." Draai hetzelfde comma
 Het script zet zelf de namen in `wrangler.jsonc`: de Worker heet zoals de app, de database
 en de bestanden heten `<naam>` en voor de previews `<naam>-test`. De id's van de databases
 blijven nullen; die vult App inrichten straks met een pull request. Pas `wrangler.jsonc`
-hier niet zelf aan.
+hier niet zelf aan. Het zet ook de `LICENSE` op naam van het bedrijf (het gebruiksrecht van
+Stage Two blijft in `LICENSE-STAGE-TWO`) en laat `.claude/settings.json` naar de kopie van de
+plugin in de eigen organisatie wijzen. Pas die bestanden niet zelf aan.
 
 - `mislukt`: geef `reden` door (dat is de volledige foutmelding). Staat er een `repo` in
   het antwoord, dan is de repo al aangemaakt: **draai precies hetzelfde `--doe-het`-commando
@@ -127,7 +134,7 @@ hier niet zelf aan.
 
 De Worker, de deur (Access), de databases (D1) en de bestanden (R2), voor productie en voor
 de previews, worden ingericht door de workflow **App inrichten** in de beheer-repo van de
-organisatie (het script zoekt hem zelf en neemt alleen een beheer-repo van het lichte spoor), op
+organisatie (het script zoekt hem zelf en neemt alleen een beheer-repo voor tier 1), op
 GitHub. Daar staan alle sleutels; op deze computer komt bewust geen Cloudflare-toegang.
 Probeer dat nooit zelf te doen, ook niet als `wrangler` op deze computer staat.
 
@@ -147,12 +154,13 @@ minuten kan duren. Het antwoord:
   stap 4, of vraag het nu, en draai opnieuw met `--beheer <naam zonder eigenaar>`.
 - `kies-groepen`: de app staat nog niet in de toegangslijst en er zijn geen groepen
   meegegeven. Toon `groepen`, laat kiezen, en draai opnieuw met `--groepen`. Is de lijst
-  leeg, geef dan `reden` door: Stage Two maakt de groepen aan.
+  leeg, geef dan `reden` door: de owner maakt de groepen aan (tijdens het project Stage Two).
 - `wacht-op-toegang`: er staat nu een pull request op de beheer-repo (`pr`) die de app
-  aan de toegangslijst toevoegt. Zeg dat de eigenaar van de beheer-repo die moet
-  goedkeuren en mergen (zo beslist een mens wie bij een app mag), en dat je daarna
-  hetzelfde commando nog een keer draait, zonder `--groepen`, `--publiek` en `--dicht`. Je
-  kunt intussen al bouwen.
+  aan de toegangslijst toevoegt. Die wijzigt alleen `toegang.json`, dus de controle
+  Toegang of review wordt vanzelf groen. Zeg dat de gebruiker hem zelf merget als hij in het
+  team `toegangsbeheer` zit (anders de owner van de organisatie); zo beslist een mens wie
+  bij een app mag. Zeg ook dat je daarna hetzelfde commando nog een keer draait, zonder
+  `--groepen`, `--publiek` en `--dicht`. Je kunt intussen al bouwen.
 - `geen-beheer`: deze organisatie heeft (nog) geen beheer-repo. Zeg dat Stage Two de
   hosting, de database en de bestanden inricht, en loop de `nogTeDoen` van stap 5 langs.
 - `mislukt`: geef `reden` door, met de `url` van de run als die er is. De app zelf is
@@ -173,5 +181,8 @@ Zeg tot slot, in deze volgorde:
    Komen er gegevens in, dan begint dat werk met de eerste tabellen: een migratie in
    `migrations/` (de route `docs/routes/databasewijziging.md`) en de servercode in
    `worker/` die ze leest en schrijft. De eerste merge zet de app echt neer.
-3. Laat Stage Two weten dat deze app bestaat (naam en link), zodat hij in het overzicht
-   komt en meedoet met updates van de werkwijze.
+3. Laat Stage Two weten dat deze app bestaat (de naam en waarvoor hij is), zodat Stage Two
+   bij vragen weet over welke app het gaat. Een link naar de repo helpt alleen tijdens het
+   project; na de overdracht kan Stage Two een privé-repo niet openen. Toegang tot de app
+   heeft Stage Two niet nodig: nieuwe versies van de werkwijze haalt de gebruiker zelf in de app
+   binnen met `/stagetwo-tier1:updaten`.
