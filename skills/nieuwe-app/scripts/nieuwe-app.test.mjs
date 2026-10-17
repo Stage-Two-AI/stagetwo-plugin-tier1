@@ -469,7 +469,7 @@ test("kiesBeheerRepo: één is vanzelf, meer is kiezen, een verkeerde keuze is e
   const twee = ["org/christijn-beheer-light", "org/stagetwo-beheer-light"];
   assert.deepEqual(kiesBeheerRepo("org", twee), { kies: twee });
   assert.deepEqual(kiesBeheerRepo("org", twee, "stagetwo-beheer-light"), { repo: "org/stagetwo-beheer-light" });
-  assert.match(kiesBeheerRepo("org", twee, "stagetwo-beheer").fout, /geen beheer-repo van het lichte spoor/);
+  assert.match(kiesBeheerRepo("org", twee, "stagetwo-beheer").fout, /geen beheer-repo voor tier 1/);
 });
 
 test("--beheer: alleen een repo-naam zonder eigenaar", () => {

@@ -97,8 +97,8 @@ het betekent, in hooguit drie regels; gebruik daarvoor `samenvatting` als die er
 - `bij`: de app staat al op de nieuwste versie. Zeg dat en ga door naar deel 4.
 - `geen-template`: deze repo is niet uit de template gebouwd. Zeg dat en ga door naar
   deel 5.
-- `ander-spoor`: deze app hoort bij een ander spoor van Stage Two (Vercel, of Cloudflare
-  met Supabase) en dus bij een andere plugin. Geef `reden` door (die noemt het juiste
+- `ander-spoor`: deze app hoort bij tier 2 van Stage Two (Cloudflare met Supabase) of
+  bij de oude Vercel-template, en dus bij een andere plugin. Geef `reden` door (die noemt het juiste
   commando), sla deel 4 over en ga door naar deel 5. Werk zo'n app nooit met deze plugin bij.
 - `mislukt` of `gestopt`: `reden` is één zin met wat de gebruiker moet doen. Geef die
   door en ga door naar deel 4. Probeer het niet te omzeilen en verzin geen andere weg.

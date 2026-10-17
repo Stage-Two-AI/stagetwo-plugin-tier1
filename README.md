@@ -1,13 +1,17 @@
 # Stage Two-plugin voor Claude Code (tier 1)
 
-Je hebt een app die Stage Two voor je heeft gebouwd, of je gaat er zelf een maken, en je
-werkt eraan met Claude Code. Deze versie van de plugin is voor **lichte apps**: elke app
-draait als één geheel bij **Cloudflare**, met zijn eigen servercode, een eigen database en
-een eigen plek voor bestanden. Er komt geen ander systeem bij. Stage Two vertelt je bij de
-start welke plugin bij jouw bedrijf hoort.
-Deze plugin zorgt dat Claude Code daarbij de werkwijze van Stage Two kent en bewaakt, en
-dat je zelf verbeteringen aan die werkwijze kunt ophalen. Ook als Stage Two er niet meer
-bij is.
+Je bouwt zelf apps voor je bedrijf met Claude Code, in de omgeving die Stage Two voor je
+heeft ingericht. Deze versie van de plugin is voor **tier 1**: elke app draait als één geheel
+bij **Cloudflare**, met zijn eigen servercode, een eigen database en een eigen plek voor
+bestanden. Er komt geen ander systeem bij. Stage Two vertelt je bij de start welke plugin
+bij jouw bedrijf hoort.
+Deze plugin zorgt dat Claude Code daarbij de werkwijze van Stage Two kent en bewaakt.
+
+Wat je hebt, is van jou en blijft werken, ook zonder Stage Two. Zolang het abonnement bij
+Stage Two loopt, zet Stage Two nieuwe versies van deze plugin en van de template in de kopie
+in de GitHub van je eigen organisatie (`stagetwo-plugin-tier1` en `app-template-tier1`);
+stopt het abonnement, dan blijven die op de laatste versie staan. Wat het abonnement wel en
+niet levert, staat in [het aanbod van Stage Two](https://github.com/Stage-Two-AI/Stack/blob/main/AANBOD.md).
 
 Je hoeft geen programmeur te zijn om dit te gebruiken. De eerste keer loopt Stage Two het
 met je door; daarna merk je er weinig van, behalve dat je assistent af en toe iets uitlegt
@@ -22,7 +26,7 @@ Vier commando's, en een bewaker op de achtergrond:
   daarna wat je wilt doen. Zie hieronder.
 - **Zelf een nieuwe app beginnen.** Typ `/stagetwo-tier1:nieuwe-app`. Je assistent denkt eerst
   met je mee (wat moet de app doen en voor wie) en maakt hem daarna aan uit de nieuwste
-  lichte Stage Two-template, onder het GitHub-account van je bedrijf. De beheer-repo van
+  Stage Two-template voor tier 1, onder het GitHub-account van je bedrijf. De beheer-repo van
   je bedrijf zet hem daarna online, achter de deur. Zie hieronder.
 - **Verder werken aan een app.** `/stagetwo-tier1:verder-werken` is de vaste route voor elke
   wijziging, ook aan de database en aan de servercode. Je hoeft het commando niet te
@@ -168,6 +172,9 @@ bij de tijd houden, typ dan in de map van je app:
 /stagetwo-tier1:updaten
 ```
 
+Zolang het abonnement bij Stage Two loopt, zet Stage Two de voorstellen voor je apps ook
+zelf klaar en kijkt ze na; dit commando is er voor als je het zelf wilt doen.
+
 Wat er dan gebeurt, in deze volgorde:
 
 1. **De plugin zelf** wordt bijgewerkt. Een nieuwe versie werkt na het opnieuw openen
@@ -251,7 +258,7 @@ Deze repo is begonnen als kopie van `stack-plugin-cloudflare` 1.2.0. Wat anders 
   appnaam, en `database_name` en `bucket_name` op `<naam>` (productie) en `<naam>-test`
   (`env.preview`). De database-id's blijven de nullen uit de template; App inrichten vult
   ze met een pull request. Het weghalen van `nietMeenemen` en het opruimen van de
-  omgeving `proef-beheer` zijn weg: de light-template heeft geen `beheer/` en geen
+  omgeving `proef-beheer` zijn weg: de template voor tier 1 heeft geen `beheer/` en geen
   proef-workflows;
 - `--inrichten` werkt zoals bij tier 2: eerst `toegang.json` van
   de beheer-repo van tier 1 (gevonden op inhoud, niet op naam; meestal `<org>/stagetwo-beheer-tier1`), zo nodig een pull request daarop,
@@ -293,7 +300,7 @@ gestart vanuit `Stack/bin/stack-sync.mjs`, dat het register en de ruleset meegee
   en `.claude/`). Zonder manifest, of met een andere `variant` dan `light`, doet hij niets. `STACK_ALLOW_POLICY_EDIT=1` laat
   padbewerkingen door, voor onderhoud aan de template zelf.
 - De melding vergelijkt `.claude/stack-version` met de hoogste tag `stack-v<n>` op de
-  publieke light-template (één anonieme `git ls-remote`, drie seconden), met een dagstempel
+  openbare template voor tier 1 (één anonieme `git ls-remote`, drie seconden), met een dagstempel
   per repo in `${CLAUDE_PLUGIN_DATA}`.
 - Het templatedeel van `/stagetwo-tier1:updaten` (`bijwerken.mjs`) draait in twee stappen: `--droogloop` (voorcontrole, tijdelijke
   kloon, kern toepassen, resultaat als JSON) en `--werkmap <map>` (keuzes toepassen,

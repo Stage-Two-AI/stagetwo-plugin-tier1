@@ -1,6 +1,6 @@
 ---
 name: nieuwe-app
-description: Een nieuwe lichte app starten op de manier van Stage Two (één Cloudflare Worker met eigen servercode, een D1-database en R2-bestanden) - eerst meedenken over wat de app moet doen, dan de app aanmaken uit de nieuwste light-template van Stage Two onder de organisatie van de gebruiker, en Worker, deur, database en bestanden laten inrichten door de beheer-repo. Gebruik dit als de gebruiker /stagetwo-tier1:nieuwe-app typt of een nieuwe, losstaande app wil beginnen (niet een uitbreiding van een bestaande app).
+description: Een nieuwe app starten op tier 1 van Stage Two (één Cloudflare Worker met eigen servercode, een D1-database en R2-bestanden) - eerst meedenken over wat de app moet doen, dan de app aanmaken uit de nieuwste template voor tier 1 van Stage Two onder de organisatie van de gebruiker, en Worker, deur, database en bestanden laten inrichten door de beheer-repo. Gebruik dit als de gebruiker /stagetwo-tier1:nieuwe-app typt of een nieuwe, losstaande app wil beginnen (niet een uitbreiding van een bestaande app).
 ---
 
 Je helpt iemand die niet technisch is om een nieuwe app goed te beginnen. Het gesprek
@@ -127,7 +127,7 @@ hier niet zelf aan.
 
 De Worker, de deur (Access), de databases (D1) en de bestanden (R2), voor productie en voor
 de previews, worden ingericht door de workflow **App inrichten** in de beheer-repo van de
-organisatie (het script zoekt hem zelf en neemt alleen een beheer-repo van het lichte spoor), op
+organisatie (het script zoekt hem zelf en neemt alleen een beheer-repo voor tier 1), op
 GitHub. Daar staan alle sleutels; op deze computer komt bewust geen Cloudflare-toegang.
 Probeer dat nooit zelf te doen, ook niet als `wrangler` op deze computer staat.
 

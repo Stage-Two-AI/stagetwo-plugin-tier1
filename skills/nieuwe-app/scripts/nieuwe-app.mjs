@@ -493,7 +493,7 @@ export function kiesBeheerRepo(eigenaar, kandidaten, gekozen = null) {
     const repo = `${eigenaar}/${gekozen}`;
     if (kandidaten.includes(repo)) return { repo };
     return {
-      fout: `${repo} is geen beheer-repo van het lichte spoor; kies uit: ${kandidaten.join(", ") || "(geen)"}`,
+      fout: `${repo} is geen beheer-repo voor tier 1; kies uit: ${kandidaten.join(", ") || "(geen)"}`,
     };
   }
   if (kandidaten.length > 1) return { kies: kandidaten };
@@ -687,7 +687,7 @@ export function richtIn(arg, { cwd = process.cwd(), wachtMs = 5000, maxWachtMinu
   if (!beheer) {
     return {
       status: "geen-beheer",
-      reden: `${arg.eigenaar} heeft geen beheer-repo van het lichte spoor; Stage Two richt de hosting, de database en de bestanden in`,
+      reden: `${arg.eigenaar} heeft geen beheer-repo voor tier 1; Stage Two richt de hosting, de database en de bestanden in`,
     };
   }
   const repo = `${arg.eigenaar}/${arg.naam}`;
