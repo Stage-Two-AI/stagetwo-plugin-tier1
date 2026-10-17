@@ -156,10 +156,11 @@ minuten kan duren. Het antwoord:
   meegegeven. Toon `groepen`, laat kiezen, en draai opnieuw met `--groepen`. Is de lijst
   leeg, geef dan `reden` door: Stage Two maakt de groepen aan.
 - `wacht-op-toegang`: er staat nu een pull request op de beheer-repo (`pr`) die de app
-  aan de toegangslijst toevoegt. Zeg dat de eigenaar van de beheer-repo die moet
-  goedkeuren en mergen (zo beslist een mens wie bij een app mag), en dat je daarna
-  hetzelfde commando nog een keer draait, zonder `--groepen`, `--publiek` en `--dicht`. Je
-  kunt intussen al bouwen.
+  aan de toegangslijst toevoegt. Die wijzigt alleen `toegang.json`, dus de controle
+  Toegang of review wordt vanzelf groen. Zeg dat de gebruiker hem zelf merget als hij in het
+  team `toegangsbeheer` zit (anders de owner van de organisatie); zo beslist een mens wie
+  bij een app mag. Zeg ook dat je daarna hetzelfde commando nog een keer draait, zonder
+  `--groepen`, `--publiek` en `--dicht`. Je kunt intussen al bouwen.
 - `geen-beheer`: deze organisatie heeft (nog) geen beheer-repo. Zeg dat Stage Two de
   hosting, de database en de bestanden inricht, en loop de `nogTeDoen` van stap 5 langs.
 - `mislukt`: geef `reden` door, met de `url` van de run als die er is. De app zelf is
@@ -180,7 +181,8 @@ Zeg tot slot, in deze volgorde:
    Komen er gegevens in, dan begint dat werk met de eerste tabellen: een migratie in
    `migrations/` (de route `docs/routes/databasewijziging.md`) en de servercode in
    `worker/` die ze leest en schrijft. De eerste merge zet de app echt neer.
-3. Laat Stage Two weten dat deze app bestaat (naam en link), zodat Stage Two bij vragen
-   weet over welke app het gaat. Stage Two krijgt daarmee geen toegang tot de app en heeft
-   die ook niet nodig: nieuwe versies van de werkwijze haalt de gebruiker zelf in de app
+3. Laat Stage Two weten dat deze app bestaat (de naam en waarvoor hij is), zodat Stage Two
+   bij vragen weet over welke app het gaat. Een link naar de repo helpt alleen tijdens het
+   project; na de overdracht kan Stage Two een privé-repo niet openen. Toegang tot de app
+   heeft Stage Two niet nodig: nieuwe versies van de werkwijze haalt de gebruiker zelf in de app
    binnen met `/stagetwo-tier1:updaten`.

@@ -119,6 +119,8 @@ node "${CLAUDE_SKILL_DIR}/scripts/automatisch-bijwerken.mjs" --json
   ```sh
   claude plugin uninstall stack-light@stagetwo-light 2>/dev/null; claude plugin marketplace remove stagetwo-light 2>/dev/null; true
   ```
+- `uit`: de gebruiker heeft het automatisch bijwerken eerder bewust uitgezet. Laat dat zo
+  en zeg in één regel dat hij de plugin bijwerkt met `/stagetwo-tier1:updaten`.
 - `mislukt`: geef `reden` door en ga door met stap 6. De plugin werkt gewoon; alleen het
   vanzelf bijwerken ontbreekt, en `/stagetwo-tier1:updaten` doet het dan met de hand.
 
