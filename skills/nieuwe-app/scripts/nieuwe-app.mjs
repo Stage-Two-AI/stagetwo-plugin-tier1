@@ -367,6 +367,10 @@ export function zetLicentie(map, organisatie) {
   return { gezet: true, organisatie: String(organisatie).trim() };
 }
 
+/** Foutbewaking staat per app aan, op de app-repo zelf; de beheer-repo geeft geen gedeelde DSN door. */
+export const SENTRY_REGEL =
+  "Foutbewaking (Sentry): zet de variabele VITE_SENTRY_DSN op de omgevingen production en preview van deze app-repo; App inrichten waarschuwt zolang die ontbreekt. Mag later.";
+
 /** Wat er na het script nog te doen is. */
 export function nogTeDoen({ ruleset }) {
   const lijst = [];
@@ -378,7 +382,7 @@ export function nogTeDoen({ ruleset }) {
   lijst.push(
     "Hosting, deur, database en bestanden (Cloudflare: de Worker, Access, D1 en R2): de beheer-repo van de organisatie richt die in (tijdens het project doet Stage Two dat). Daar komt bewust geen toegang voor op deze computer. Tot die tijd kun je gewoon bouwen; de tests draaien tegen een lokale database.",
   );
-  lijst.push("Foutbewaking (Sentry): Stage Two maakt een project aan en zet de DSN als omgevingsvariabele. Mag later.");
+  lijst.push(SENTRY_REGEL);
   return lijst;
 }
 
@@ -674,7 +678,7 @@ export function nogTeDoenNaInrichting({ resultaat }) {
   if (resultaat?.waarschuwingen?.length) {
     for (const w of resultaat.waarschuwingen) lijst.push(`Waarschuwing van de inrichting, geef door aan Stage Two: ${w}`);
   }
-  lijst.push("Foutbewaking (Sentry): zet de variabele VITE_SENTRY_DSN op de omgevingen production en preview van deze app-repo; App inrichten waarschuwt zolang die ontbreekt. Mag later.");
+  lijst.push(SENTRY_REGEL);
   return lijst;
 }
 
