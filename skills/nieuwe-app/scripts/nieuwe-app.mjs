@@ -722,7 +722,11 @@ export function padenZin({ publiek = [], dicht = [] } = {}) {
  * repositories", maar een organisatie met ook andere repo's (zoals Stage-Two-AI) kiest
  * "Only select repositories". Dan moet elke nieuwe app-repo erbij, anders stopt App
  * inrichten bij het token. Geeft { status: "goed" | "toegevoegd" | "onbekend" | "mislukt" }.
- * "onbekend": de gebruiker mag de installaties niet zien (geen owner); dan gaat het gewoon door.
+ * "onbekend": de gebruiker mag de installaties niet zien (geen owner), of mag ze zien maar
+ * niet lezen welke repo's erbij staan. Dat laatste is de gewone inlog van `gh` (een OAuth-token):
+ * GitHub staat die lijst en het toevoegen alleen toe met een token van een GitHub App, een
+ * persoonlijk token of een wachtwoord. Dan gaat het door, met in `apps` de Apps die het niet kon
+ * controleren, zodat de melding na een mislukte inrichting kan zeggen welke App het is.
  */
 export function zorgVoorAppInstallatie(eigenaar, beheer, repo, gh = ghJsonOfNiets) {
   let installaties;
@@ -733,12 +737,14 @@ export function zorgVoorAppInstallatie(eigenaar, beheer, repo, gh = ghJsonOfNiet
   }
   const beheerNaam = beheer.split("/")[1];
   const appNaam = repo.split("/")[1];
+  const onleesbaar = [];
   for (const inst of installaties ?? []) {
     if (inst.repository_selection !== "selected") continue;
     let repos;
     try {
       repos = gh(["api", `user/installations/${inst.id}/repositories?per_page=100`, "-q", ".repositories"]);
     } catch {
+      onleesbaar.push(inst.app_slug);
       continue;
     }
     if (!repos.some((r) => r.name === beheerNaam)) continue;
@@ -755,6 +761,7 @@ export function zorgVoorAppInstallatie(eigenaar, beheer, repo, gh = ghJsonOfNiet
       };
     }
   }
+  if (onleesbaar.length) return { status: "onbekend", apps: onleesbaar };
   return { status: "goed" };
 }
 
@@ -923,7 +930,7 @@ export function richtIn(arg, { cwd = process.cwd(), wachtMs = 5000, maxWachtMinu
   if (!resultaat && appZietRepoNiet(log)) {
     return {
       status: "mislukt",
-      reden: `de GitHub App van ${beheer} ziet ${repo} niet; een owner van ${arg.eigenaar} zet de repo erbij (Settings, GitHub Apps, Configure, Repository access), daarna draai je --inrichten opnieuw`,
+      reden: `de GitHub App van ${beheer} ziet ${repo} niet; een owner van ${arg.eigenaar} zet de repo erbij (Settings, GitHub Apps, ${installatie.apps?.length ? installatie.apps.join(" of ") : "de App van de beheer-repo"}, Configure, Repository access, Select repositories), daarna draai je --inrichten opnieuw`,
       url: run.url,
     };
   }
@@ -1053,6 +1060,11 @@ export function doeHet(arg, { cwd = process.cwd() } = {}) {
     licentie = zetLicentie(map, bedrijfsnaam);
     stap = "pakketten installeren (pnpm install)";
     installeer(map);
+    // Na het invullen kan een regel in wrangler.jsonc korter of langer zijn dan in de
+    // template, en dan keurt de check Code de opmaak af. Lukt dit niet, dan meldt die check het.
+    try {
+      pnpm(map, "exec", "biome", "format", "--write", "wrangler.jsonc");
+    } catch {}
 
     stap = "committen en pushen";
     const naam = git(map, "config", "--get", "user.name") || gebruiker;

@@ -193,8 +193,15 @@ minuten kan duren. Het antwoord:
   `--groepen`, `--publiek` en `--dicht`. Je kunt intussen al bouwen.
 - `geen-beheer`: deze organisatie heeft (nog) geen beheer-repo. Zeg dat Stage Two de
   hosting, de database en de bestanden inricht, en loop de `nogTeDoen` van stap 5 langs.
-- `mislukt`: geef `reden` door, met de `url` van de run als die er is. De app zelf is
-  gewoon klaar; alleen de inrichting ontbreekt. Verwijs naar Stage Two.
+- `mislukt` met in `reden` "zet de repo erbij": de GitHub App van de beheer-repo ziet alleen
+  gekozen repo's, en de gewone GitHub-inlog op deze computer mag die lijst niet aanpassen. Dat
+  is geen storing: bij zo'n organisatie gebeurt het bij elke nieuwe app één keer met de hand.
+  Geef de owner een tabel met de schermen (organisatie, Settings, GitHub Apps, de App uit
+  `reden`, Configure, Repository access, Select repositories, de app kiezen, Save) en draai
+  daarna hetzelfde commando opnieuw. Zet de App niet op "All repositories": dan mag de
+  beheer-repo ook bij alle andere repo's van de organisatie.
+- `mislukt` om een andere reden: geef `reden` door, met de `url` van de run als die er is.
+  De app zelf is gewoon klaar; alleen de inrichting ontbreekt. Verwijs naar Stage Two.
 - `ingericht`: Worker, deur, database en bestanden staan. Het adres van de app staat in
   `adres`; tot de eerste uitrol toont het "Deze app wordt ingericht.", al achter de deur.
   App inrichten opent ook een pull request op de app die de echte database-id's in
