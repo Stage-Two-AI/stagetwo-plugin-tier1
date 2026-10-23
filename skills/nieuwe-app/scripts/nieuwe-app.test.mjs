@@ -270,6 +270,19 @@ test("GitHub App: zet de app-repo erbij als de App alleen gekozen repo's ziet", 
   assert.equal(zorgVoorAppInstallatie("Org", "Org/beheer-tier1", "Org/site", nep(["iets-anders"]).gh).status, "goed", "niet de App van deze beheer-repo");
 });
 
+test("GitHub App: kan de lijst niet lezen (gewone gh-inlog) en zegt dan welke App het is", () => {
+  const gh = (args) => {
+    if (args[1].startsWith("orgs/")) {
+      return [
+        { id: 1, app_slug: "claude", repository_selection: "all" },
+        { id: 2, app_slug: "beheer-app", repository_selection: "selected" },
+      ];
+    }
+    throw new Error("HTTP 403: You must authenticate with an access token authorized to a GitHub App");
+  };
+  assert.deepEqual(zorgVoorAppInstallatie("Org", "Org/beheer-tier1", "Org/site", gh), { status: "onbekend", apps: ["beheer-app"] });
+});
+
 test("GitHub App: herkent in het logboek dat de App de repo niet ziet", () => {
   assert.equal(appZietRepoNiet("##[error]Not Found - https://docs.github.com/rest/apps/apps#get-a-repository-installation-for-the-authenticated-app"), true);
   assert.equal(appZietRepoNiet("INRICHTING {}"), false);
