@@ -221,7 +221,9 @@ Zeg tot slot, in deze volgorde:
 2. Typ daar `/stagetwo-tier1:verder-werken` en beschrijf de eerste versie uit stap 2.
    Komen er gegevens in, dan begint dat werk met de eerste tabellen: een migratie in
    `migrations/` (de route `docs/routes/databasewijziging.md`) en de servercode in
-   `worker/` die ze leest en schrijft. De eerste merge zet de app echt neer.
+   `worker/` die ze leest en schrijft. Krijgt de app rollen, dan vult de assistent in die
+   pull request ook één keer `scripts/lokaal-rol.sql` in, zodat de lokale gebruiker dezelfde
+   rol heeft als de bouwer. De eerste merge zet de app echt neer.
 3. Laat Stage Two weten dat deze app bestaat (de naam en waarvoor hij is), zodat Stage Two
    bij vragen weet over welke app het gaat. Een link naar de repo helpt alleen tijdens het
    project; na de overdracht kan Stage Two een privé-repo standaard niet openen. Toegang tot de app

@@ -20,8 +20,13 @@ in de route van de app staat):
   `lokaal@voorbeeld.nl`. Bij de eerste start, en daarna eens per dag, laadt hij de testgegevens
   (`pnpm data:test`: een kopie van productie van vannacht, met de bestanden). Loop de wijziging
   daar na in het paneel, voordat je de gebruiker vraagt te kijken. Ziet de lokale gebruiker
-  niets, dan heeft hij nog geen rol: die zet `scripts/lokaal-rol.sql` (vraag de gebruiker welke
-  rol hij moet hebben, en schrijf dat bestand in de pull request van dit werk).
+  niets, kijk dan eerst naar `scripts/lokaal-rol.sql` (hieronder).
+- **De rol van de lokale gebruiker.** Heeft de app rollen en staat er in
+  `scripts/lokaal-rol.sql` nog alleen commentaar, schrijf dat bestand dan één keer en laat het
+  meegaan in de pull request van dit werk. Het geeft `lokaal@voorbeeld.nl` dezelfde rol als de
+  bouwer: zoek in de migraties hoe de app rollen bijhoudt en welke rol de bouwer heeft, en vraag
+  het alleen bij twijfel. `pnpm data:test` voert het uit na elke keer inladen; de gebruiker
+  hoeft niemand een rol te geven.
 - **De Cloudflare-preview is voor de gebruiker.** Geef hem één keer het vaste adres van de app
   (`actueel-...`, staat in de reactie van Preview uitrollen): daar logt hij met zijn eigen
   account in, en dat kan hij open laten staan. Wil je zelf in de Cloudflare-preview kijken en
