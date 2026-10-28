@@ -1,6 +1,6 @@
 {
   "name": "stagetwo-tier1",
-  "version": "35.0.0",
+  "version": "36.0.0",
   "description": "De werkwijze van Stage Two in Claude Code, voor tier 1-apps op Cloudflare: één Worker per app met eigen servercode, een D1-database en R2-bestanden. Vier skills: /stagetwo-tier1:installatie voor een nieuwe computer, /stagetwo-tier1:nieuwe-app om zelf een app te beginnen, /stagetwo-tier1:verder-werken voor elke wijziging aan een app, en /stagetwo-tier1:updaten om plugin, computer en apps bij te werken. Plus de bewaking van de gedeelde template.",
   "author": {
     "name": "Stage Two",
