@@ -20,10 +20,11 @@
  * Uitkomst: één JSON-object met `status`:
  *   gepusht   de PR staat open; zie pr, hoofdversies, dependabot
  *   bij       niets bij te werken binnen de grenzen; hoofdversies en dependabot staan er wel bij
- *   gestopt   er staat al een voorstel open (pr), of er zou iets anders dan het lockfile wijzigen
+ *   gestopt   er staat al een voorstel open (pr), er zou iets anders dan het lockfile wijzigen,
+ *             of het lockfile kreeg een importer buiten de repo (vreemd)
  *   mislukt   een voorwaarde ontbreekt; `reden` is één zin met één handeling
  */
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -44,6 +45,9 @@ import {
   repoUitUrl,
   sh,
 } from "../../../lib/repo.mjs";
+import { vreemdeImporters } from "../../../lib/toepassen.mjs";
+
+export { vreemdeImporters };
 
 export const BRANCH = "stack-afhankelijkheden";
 export const WERKMAP_PREFIX = "stack-afhankelijkheden-";
@@ -144,7 +148,9 @@ export function afhankelijkheden({ checkout, opAfstand = null }) {
     return { status: "gestopt", reden: `er staat al een voorstel voor de afhankelijkheden open: ${open.url}; merge of sluit dat eerst`, pr: { url: open.url, nieuw: false } };
   }
 
-  const werkmap = mkdtempSync(join(tmpdir(), WERKMAP_PREFIX));
+  // De echte padnaam: op Windows is tmpdir() vaak de korte vorm (C:\Users\BART-W~1\...), en
+  // dan ziet pnpm de kopie als een andere map dan zichzelf (zie vreemdeImporters).
+  const werkmap = realpathSync.native(mkdtempSync(join(tmpdir(), WERKMAP_PREFIX)));
   const ruimOp = () => rmSync(werkmap, { recursive: true, force: true });
   try {
     const kloon = kloonRepo({ url: origin, doel: join(werkmap, "app") });
@@ -168,6 +174,11 @@ export function afhankelijkheden({ checkout, opAfstand = null }) {
     if (buiten.length > 0) {
       ruimOp();
       return { status: "gestopt", reden: "er zou meer wijzigen dan alleen het lockfile; vraag Stage Two ernaar", buiten };
+    }
+    const vreemd = gewijzigd.includes(LOCKFILE) ? vreemdeImporters(readFileSync(join(kloon, LOCKFILE), "utf8")) : [];
+    if (vreemd.length > 0) {
+      ruimOp();
+      return { status: "gestopt", reden: "het lockfile kreeg een app buiten de repo erbij; er is niets gepusht, vraag Stage Two ernaar", vreemd };
     }
     if (gewijzigd.length === 0) {
       ruimOp();
