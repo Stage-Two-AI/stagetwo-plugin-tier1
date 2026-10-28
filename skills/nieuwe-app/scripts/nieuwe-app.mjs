@@ -11,7 +11,7 @@
  * kiezen: elke app heeft ze allebei.
  *
  *   node nieuwe-app.mjs --json --droogloop --naam <naam> --eigenaar <org> \
- *        [--omschrijving "..."] [--organisatie "<bedrijfsnaam>"] [--map <map>]
+ *        [--omschrijving "..."] [--organisatie "<bedrijfsnaam>"] [--testmail <adres>] [--map <map>]
  *       voorcontrole: staat alles klaar, bestaat de repo nog niet, waar landt hij, wie
  *       wordt reviewer (de bouwer zelf; start Stage Two hem, dan het bedrijfsaccount uit
  *       CODEOWNERS van de beheer-repo, nooit Stage Two). Maakt niets aan.
@@ -64,6 +64,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { LEVERING, STAGE_TWO } from "../../../lib/levering.mjs";
 import { SETTINGS_PAD, kiesPluginBron, metPluginBron } from "../../../lib/plugin-bron.mjs";
+import { geldigTestadres, zetTestadres } from "../../../lib/testmail.mjs";
 import { ghAanwezig, ghIngelogd, git, sh } from "../../../lib/repo.mjs";
 
 /** De template uit levering.json (een abonnee), anders die van Stage Two; zie lib/levering.mjs. */
@@ -84,6 +85,7 @@ export function leesArgumenten(argv) {
     eigenaar: null,
     omschrijving: null,
     organisatie: null,
+    testmail: null,
     map: null,
     groepen: null,
     publiek: null,
@@ -97,6 +99,7 @@ export function leesArgumenten(argv) {
     "--organisatie": "organisatie",
     "--map": "map",
     "--groepen": "groepen",
+    "--testmail": "testmail",
     "--publiek": "publiek",
     "--dicht": "dicht",
     "--beheer": "beheer",
@@ -147,6 +150,9 @@ export function controleerArgumenten(arg) {
   if (padFout) return padFout;
   if (arg.beheer !== null && arg.beheer !== undefined && !/^[a-z0-9][a-z0-9-]{0,99}$/.test(arg.beheer)) {
     return "--beheer: de naam van de beheer-repo binnen de organisatie, zonder eigenaar (bijvoorbeeld stagetwo-beheer-tier1)";
+  }
+  if (arg.testmail !== null && arg.testmail !== undefined && !geldigTestadres(arg.testmail)) {
+    return "--testmail: een gewoon mailadres waar de testmails van de app heen gaan (bijvoorbeeld test@bedrijf.nl)";
   }
   if (arg.organisatie !== null && arg.organisatie !== undefined && !geldigeOrganisatie(arg.organisatie)) {
     return "--organisatie: de naam van het bedrijf, op één regel en hooguit 100 tekens (bijvoorbeeld \"Richplant B.V.\")";
@@ -1061,6 +1067,7 @@ export function doeHet(arg, { cwd = process.cwd() } = {}) {
     stap = "invullen";
     vulIn(map, { naam: arg.naam, omschrijving: arg.omschrijving, reviewer });
     zetCloudflareNamen(map, arg.naam);
+    if (arg.testmail) zetTestadres(map, arg.testmail);
     pluginBron = zetPluginBron(map);
     licentie = zetLicentie(map, bedrijfsnaam);
     stap = "pakketten installeren (pnpm install)";

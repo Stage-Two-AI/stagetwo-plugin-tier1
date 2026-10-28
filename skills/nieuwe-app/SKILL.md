@@ -111,6 +111,10 @@ echte gegevens raakt. Dat kost per app vrijwel niets.
   site (stap 1), stel dan voor: alles publiek, en `/beheer`, `/beheer/*` en `/api/beheer/*`
   dicht. Zijn het maar een paar publieke pagina's, noem die (bijvoorbeeld `/galerij/*`).
   Onthoud het voor stap 5b. Een pad begint met `/`, met hooguit een `*` aan het eind.
+- **Testadres.** Vraag naar welk adres de testmails van deze app mogen. In de preview en lokaal gaat
+  elke mail van de app naar dat ene adres, wie er ook als ontvanger staat, want daar staat een
+  kopie van echte gegevens. Stel het adres van de gebruiker voor (`git config user.email`).
+  Het hoort bij de app, niet bij één persoon, dus een gedeeld adres mag ook.
 - **Map.** De app komt als nieuwe submap met de naam van de app onder de map die nu open
   staat. Zeg dat.
 
@@ -119,7 +123,7 @@ echte gegevens raakt. Dat kost per app vrijwel niets.
 Draai eerst de droogloop, met Bash, precies zo:
 
 ```sh
-node "${CLAUDE_SKILL_DIR}/scripts/nieuwe-app.mjs" --json --droogloop --naam "<naam>" --eigenaar "<eigenaar>" --omschrijving "<omschrijving>" --organisatie "<bedrijfsnaam>"
+node "${CLAUDE_SKILL_DIR}/scripts/nieuwe-app.mjs" --json --droogloop --naam "<naam>" --eigenaar "<eigenaar>" --omschrijving "<omschrijving>" --organisatie "<bedrijfsnaam>" --testmail "<testadres>"
 ```
 
 `<bedrijfsnaam>` is de naam van het bedrijf waarvoor de app is, zoals je die uit het gesprek of

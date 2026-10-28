@@ -15,12 +15,26 @@ in de route van de app staat):
 
 - **Een PR begint als concept** (`gh pr create --draft`). Dan draaien alleen de snelle
   checks en wordt de preview bijgewerkt. Push per afgerond stukje, niet per kleine wijziging.
-- **Kijk zelf mee in de zijbalk.** Open de Cloudflare-preview in de browser in de zijbalk van
-  de Claude-app (de tools `Claude_Browser`; zijn die er niet, dan Claude in Chrome) en loop de
-  wijziging na voordat je de gebruiker vraagt te kijken. Zie je het inlogscherm van Cloudflare
-  Access, vraag de gebruiker dan één keer in te loggen in dat paneel; daarna onthoudt de
-  browser het voor alle apps. Geef de gebruiker één keer het vaste adres van de app
-  (`actueel-...`, staat in de reactie van Preview uitrollen): dat kan hij open laten staan.
+- **Kijk eerst zelf, lokaal, met echte gegevens** (template 34 en nieuwer). De preview in de
+  Claude-app start de app op deze computer, zonder deur, als de vaste gebruiker
+  `lokaal@voorbeeld.nl`. Bij de eerste start, en daarna eens per dag, laadt hij de testgegevens
+  (`pnpm data:test`: een kopie van productie van vannacht, met de bestanden). Loop de wijziging
+  daar na in het paneel, voordat je de gebruiker vraagt te kijken. Ziet de lokale gebruiker
+  niets, dan heeft hij nog geen rol: die zet `scripts/lokaal-rol.sql` (vraag de gebruiker welke
+  rol hij moet hebben, en schrijf dat bestand in de pull request van dit werk).
+- **De Cloudflare-preview is voor de gebruiker.** Geef hem één keer het vaste adres van de app
+  (`actueel-...`, staat in de reactie van Preview uitrollen): daar logt hij met zijn eigen
+  account in, en dat kan hij open laten staan. Wil je zelf in de Cloudflare-preview kijken en
+  zie je het inlogscherm van Access, vraag de gebruiker dan één keer in te loggen in het paneel
+  (de tools `Claude_Browser`; zijn die er niet, dan Claude in Chrome).
+- **Een fout uit productie?** Kijk eerst in Sentry, via de koppeling Sentry in claude.ai. Staat
+  die niet aan, zeg dan dat Stage Two hem in een kort gesprek koppelt, en vraag de gebruiker
+  intussen de foutmelding of een schermafbeelding.
+- **Het testadres.** Draai één keer per app
+  `node "${CLAUDE_SKILL_DIR}/scripts/testmail.mjs"`. Geeft dat `leeg`, vraag dan naar welk
+  adres de testmails van deze app mogen (stel het adres van de gebruiker voor), zet het met
+  `--zet "<adres>"` en laat het meegaan in de pull request van dit werk. Zonder testadres
+  verstuurt de app buiten productie geen mail.
 - **Zegt de gebruiker dat het goed is**, zet de PR dan op klaar (`gh pr ready`), wacht zelf op
   alle checks (`gh pr checks --watch`) en repareer wat rood is, net zo lang tot alles groen
   is. Vraag de gebruiker nooit wat hij met een rode check moet; leg alleen iets voor als een
