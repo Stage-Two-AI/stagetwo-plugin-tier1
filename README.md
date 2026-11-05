@@ -342,9 +342,8 @@ een aparte D1 en R2 voor de previews. Geen Supabase.
 
 Deze repo is begonnen als kopie van `stack-plugin-cloudflare` 1.2.0. Wat anders is:
 
-- de template is `Stage-Two-AI/app-template-tier1` (melding, updaten, nieuwe-app, de
-  beheerde run);
-- de hook, `updaten`, het overzicht en de beheerde run doen alleen iets bij een app met
+- de template is `Stage-Two-AI/app-template-tier1` (melding, updaten, nieuwe-app);
+- de hook, `updaten` en het overzicht doen alleen iets bij een app met
   `"variant": "light"` in `.claude/stack-manifest.json`. Een app van de andere variant laten
   ze aan de andere plugin over, ook als alle drie de plugins op één computer staan;
   `updaten` noemt dan het juiste commando;
@@ -381,14 +380,13 @@ skills/            de vier skills; met een script: updaten (bijwerken.mjs voor d
                    (nieuwe-app.mjs: aanmaken, en --inrichten start de workflow in de
                    beheer-repo van de klant; plus ruleset.json voor main)
 lib/               de kern: manifest lezen, toepassen, PR-tekst, git- en PR-stappen
-beheer/            alleen voor Stage Two, geen skill: de beheerde run over het register,
-                   Uitleveren en levering-omzetten.mjs (bestaande apps naar de kopie)
+beheer/            alleen voor Stage Two, geen skill: Uitleveren en levering-omzetten.mjs
+                   (bestaande apps naar de kopie)
 test/              de geheimenscan over boom en geschiedenis
 ```
 
-`beheer/beheerd.mjs` staat bewust niet onder `bin/`: die map zet Claude Code op het
-PATH van elke sessie waarin de plugin aanstaat, ook bij klanten. De beheerde run wordt
-gestart vanuit `Stack/bin/stack-sync.mjs`, dat het register en de ruleset meegeeft.
+De scripts in `beheer/` staan bewust niet onder `bin/`: die map zet Claude Code op het
+PATH van elke sessie waarin de plugin aanstaat, ook bij klanten.
 
 ### Hoe het werkt, in het kort
 
@@ -435,8 +433,8 @@ gestart vanuit `Stack/bin/stack-sync.mjs`, dat het register en de ruleset meegee
   een commit zonder die trailer wordt nooit opnieuw opgebouwd. De tijdelijke map
   verdwijnt na de tweede aanroep en bij elke mislukking. Met `--repo eigenaar/naam`
   werkt het een app bij die niet op de computer staat (kloon via de gh-login). De
-  branchnaam `stack-bijwerken/v<n>` en de trailer blijven zo heten: de beheerde run en
-  de bestaande pull requests van klanten leunen erop.
+  branchnaam `stack-bijwerken/v<n>` en de trailer blijven zo heten: de bestaande pull
+  requests van klanten leunen erop.
 - `afhankelijkheden.mjs`: `pnpm update --no-save` in een tijdelijke kloon (alleen het
   lockfile verandert, de grenzen in package.json zijn deels van de template), PR op de
   vaste branch `stack-afhankelijkheden`; staat die PR al open, dan stopt hij. Noemt de
@@ -510,8 +508,6 @@ mag starten; de sleutels staan in de omgeving `beheer` en zijn voor hem niet te 
    de klant zelf apps gaat starten. Worker, deur, D1 en R2 richt de workflow "App
    inrichten" in `<klantorg>/stagetwo-beheer-tier1` in; die toegang komt nooit op de computer
    van de klant (besluit 22-09-2026).
-8. Zet in `Stack/projecten.json` de `route` van het project op `plugin`; een app die de
-   klant zelf met `/stagetwo-tier1:nieuwe-app` maakte, voeg je toe zodra hij hem meldt.
 
 ### Een nieuwe versie uitbrengen
 
@@ -634,10 +630,9 @@ bronrepo.
   beheer-repo); staat daar geen ander account, dan stopt het script met een melding. Stage Two installeert `stagetwo-levering` bij de
   start namens de klant, op alleen de twee leveringsrepo's ("Only select repositories"); de
   klant kan hem altijd zelf verwijderen. Update-voorstellen in apps zet de bouwer zelf klaar met
-  `/stagetwo-tier1:updaten`; Stage Two opent geen pull requests bij de klant. De beheerde
-  run (`beheer/beheerd.mjs`) is alleen voor de eigen apps van Stage Two en voor een klant die
-  nog in de projectfase zit. Een nieuwe versie van de beheer-repo alleen op verzoek: de owner
-  geeft Stage Two tijdelijk toegang en haalt die daarna weer weg. Opzeggen: zie hieronder.
+  `/stagetwo-tier1:updaten`; Stage Two opent geen pull requests bij de klant. Een nieuwe
+  versie van de beheer-repo alleen op verzoek: de owner geeft Stage Two tijdelijk toegang en
+  haalt die daarna weer weg. Opzeggen: zie hieronder.
 
 ### Een abonnement stoppen
 
