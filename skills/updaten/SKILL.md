@@ -140,7 +140,23 @@ het betekent, in hooguit drie regels; gebruik daarvoor `samenvatting` als die er
   door en ga door naar deel 4. Probeer het niet te omzeilen en verzin geen andere weg.
 - `klaar`: de werkkopie staat klaar. Ga door naar 3b.
 
+Het script raakt alleen bestanden van de template, met één uitzondering: een versie die
+eenmalig iets in een bestand van het project nodig heeft, anders is de pull request zelf rood.
+Die bestanden staan in `projectbestanden`, en wat de gebruiker daarna zelf moet nalopen in
+`voorDeBouwer`. Bij de overstap naar versie 39 is dat `src/onderdelen.ts`, als hij ontbreekt:
+de lijst met onderdelen die de nieuwe browsertest één voor één opent, gevuld uit de routes van
+de app (`onderdelen`), met `/` altijd erbij. Zie 3b.
+
 ### 3b: alleen bij overgeslagen bestanden een vraag
+
+**Eerst de koppen van de onderdelen** (alleen als `onderdelen` in het antwoord staat). De
+browsertest zoekt per onderdeel de kop (h1) van het hoofdscherm, en die kan het script niet
+weten. Zoek per pad in `onderdelen.onderdelen` in de code van de app (alleen lezen, niets
+wijzigen) welk scherm daar opent en wat zijn h1 is, en geef die in 3c mee met
+`--kop "<pad>" "<kop>"`. Is de kop gelijk aan de `naam`, of vind je geen vaste kop (hij komt
+uit de gegevens), laat `--kop` voor dat pad dan weg en noem het in deel 6. Bij een andere app
+(deel 5, `--repo`) staat de code niet op deze computer: laat `--kop` dan weg en noem het ook.
+Dit is geen vraag aan de gebruiker.
 
 Is `overgeslagen` leeg, dan is er niets te kiezen: ga meteen naar 3c. Het typen van
 `/stagetwo-tier1:updaten` was de toestemming voor de pull request; vraag die niet nog een keer.
@@ -177,7 +193,8 @@ Draai het script opnieuw met de `werkmap` uit 3a en per gekozen bestand een
 node "${CLAUDE_SKILL_DIR}/scripts/bijwerken.mjs" --json --werkmap "<werkmap uit 3a>" --los-op "<pad>" template --los-op "<ander pad>" eigen
 ```
 
-Zonder keuzes laat je `--los-op` weg. Het script commit met de git-naam en het
+Met koppen uit 3b komt er per onderdeel `--kop "<pad>" "<kop>"` bij. Zonder keuzes laat je
+`--los-op` weg. Het script commit met de git-naam en het
 e-mailadres van de gebruiker, pusht de branch `stack-bijwerken/v<versie>` naar zijn
 eigen GitHub en opent de pull request, of werkt een bestaande bij.
 
@@ -190,7 +207,8 @@ de gebruiker het opnieuw proberen, dan draait hij later `/stagetwo-tier1:updaten
 Onthoud voor de samenvatting aan het eind (deel 6), in gewone taal:
 
 1. wat er is bijgewerkt en waarom (een nieuwere versie van de gedeelde werkwijze), en
-   wat er niet is bijgewerkt (de bestanden waarvoor hij **eigen** koos);
+   wat er niet is bijgewerkt (de bestanden waarvoor hij **eigen** koos); en of er eenmalig
+   een eigen bestand bij zat (`projectbestanden`) en wat er in `voorDeBouwer` staat;
 2. waar de pull request staat (`pr.url`, of anders `vergelijkUrl` om hem zelf te openen);
 3. wat hij nu doet: de pull request bekijken, wachten tot de checks groen zijn en op
    Merge drukken. Zijn de checks rood, dan voldoet de app niet aan een nieuwe regel;
@@ -283,7 +301,9 @@ Sluit af met één overzicht, in gewone taal:
    pijltje **^**, rechtermuisknop op het Claude-icoon, **Afsluiten**; macOS: cmd+Q), open
    hem opnieuw, klik dit gesprek aan in de linkerzijbalk en typ **ga verder**. Is alleen de
    plugin bijgewerkt (deel 2 niet), dan is `/reload-plugins` in dit gesprek ook genoeg.
-4. Gaat een app naar template 34 of nieuwer, zeg dan in één zin wat er nieuw is: de
+4. Staat er iets in `voorDeBouwer`, zeg het per punt in gewone taal; het staat ook in de pull
+   request onder **Voor jou**.
+5. Gaat een app naar template 34 of nieuwer, zeg dan in één zin wat er nieuw is: de
    assistent kijkt voortaan zelf in de app op deze computer, met een kopie van de echte
    gegevens van vannacht, en mail buiten productie gaat naar één testadres. Bij het
    eerstvolgende werk aan die app vraagt de assistent één keer naar dat adres; de lokale
