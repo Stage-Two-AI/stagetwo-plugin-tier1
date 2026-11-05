@@ -228,7 +228,9 @@ export const MIGRATIE_CONTEXT = [
   "in zijn geheel en loop die stappen af, naast de route verder-werken. Migraties zijn aanvullend:",
   "een nieuw genummerd bestand in migrations/, een migratie die al in main staat pas je nooit meer",
   "aan. De servercode in worker/ is de enige die de database leest en schrijft; leg het nieuwe",
-  "gedrag vast in een test en probeer het lokaal met `pnpm db:lokaal`.",
+  "gedrag vast in een test en probeer het lokaal met `pnpm db:lokaal`. Elke nieuwe tabel krijgt een",
+  "A/B-test met de hulp uit tests/helpers/afscherming.ts (gebruiker B krijgt de rij van A niet via de",
+  "API), of staat met een reden in `open_tabellen` van stack.config.json.",
 ].join("\n");
 
 /**

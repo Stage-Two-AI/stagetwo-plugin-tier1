@@ -89,6 +89,12 @@ Wat verder bij deze route hoort, en wat de route zelf ook noemt:
   `docs/routes/databasewijziging.md` in zijn geheel en volg die stappen. Een migratie is
   een nieuw bestand in `migrations/`; de hook van de plugin herinnert je aan de route
   zodra je daar schrijft.
+  - Elke nieuwe tabel krijgt een A/B-test met de gedeelde hulp uit
+    `tests/helpers/afscherming.ts`: gebruiker A maakt een rij via de API, gebruiker B krijgt
+    hem niet te zien, niet gewijzigd en niet verwijderd. Is de tabel bewust gedeeld (iedereen
+    binnen ziet alles, zoals `items` in de template), dan staat hij met een reden in
+    `open_tabellen` in `stack.config.json` en hoeft de test niet. De Kwaliteitspoort zoekt per
+    tabel naar een van de twee.
 - **Servercode** staat in `worker/` en gaat met de rest van de app mee bij de uitrol na de
   merge. Er is geen aparte stap om hem live te zetten. Zelf `wrangler deploy` of iets met
   `--remote` draaien kan en mag niet: op deze computer is geen Cloudflare-toegang.
