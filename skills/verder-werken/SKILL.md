@@ -13,8 +13,10 @@ uit elkaar lopen. Deze skill is alleen de aansluiting voor Claude Code.
 Het ritme van een wijziging (template-versie 24 en nieuwer; bij een oudere versie geldt wat
 in de route van de app staat):
 
-- **Een PR begint als concept** (`gh pr create --draft`). Dan draaien alleen de snelle
-  checks en wordt de preview bijgewerkt. Push per afgerond stukje, niet per kleine wijziging.
+- **Een PR begint als concept** (`gh pr create --draft`), ook als er een migratie in zit. Dan
+  draaien alleen de snelle checks en wordt de preview bijgewerkt. De hook van de plugin weigert
+  `gh pr create` zonder `--draft`. Push per afgerond stukje, niet per kleine wijziging, en
+  draai vóór elke push `pnpm check`.
 - **Kijk eerst zelf, lokaal, met echte gegevens** (template 34 en nieuwer). De preview in de
   Claude-app start de app op deze computer, zonder deur, als de vaste gebruiker
   `lokaal@voorbeeld.nl`. Bij de eerste start, en daarna eens per dag, laadt hij de testgegevens
