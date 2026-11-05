@@ -79,7 +79,7 @@ test("overzicht: alleen light-apps met schrijfrecht (geen Vercel- of Cloudflare 
     "api repos/klant/vercel-app/contents/.claude/stack-version": raw(6),
     "api repos/klant/supabase-app/contents/.claude/stack-manifest.json": { stdout: { variant: "cloudflare", stackVersion: 7 } },
     "api repos/klant/supabase-app/contents/.claude/stack-version": raw(7),
-    "pr list": { stdout: [{ number: 3, headRefName: "stack-sync/v9", url: "https://github.com/klant/portaal/pull/3" }] },
+    "pr list": { stdout: [{ number: 3, headRefName: "stack-bijwerken/v9", url: "https://github.com/klant/portaal/pull/3" }] },
   });
   try {
     const r = w.draai(["--json", "--eigenaar", "klant"]);
