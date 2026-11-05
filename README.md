@@ -77,7 +77,9 @@ Vier commando's, en een bewaker op de achtergrond:
   wijziging, ook aan de database en aan de servercode. Je hoeft het commando niet te
   typen: gewoon vragen wat je wilt werkt ook. De route staat ook in je app beschreven
   (`docs/routes/`). Na de merge gaat alles in één keer live: schermen, servercode en
-  databasewijzigingen.
+  databasewijzigingen. Je kunt Claude starten in de map van een app, of in de map waarin al
+  je apps staan: dan zegt hij welke apps er staan en of er een achterloopt, en werkt hij in
+  de map van de app waar je vraag over gaat.
 - **Meekijken terwijl je bouwt.** In de Claude-app start je assistent de app vanzelf op
   je eigen computer en laat hij hem zien in het venster naast het gesprek (de preview).
   Hij kijkt daar zelf ook mee om zijn werk te controleren. De preview gebruikt een
@@ -374,7 +376,8 @@ Een verbetering die voor beide varianten geldt, doe je in beide plugins.
 hooks/             de bewaker (PreToolUse) en de melding bij sessiestart (SessionStart)
 skills/            de vier skills; met een script: updaten (bijwerken.mjs voor de
                    template, afhankelijkheden.mjs, overzicht.mjs), installatie
-                   (controle.sh, shell omdat Node kan ontbreken) en nieuwe-app
+                   (controle.sh, shell omdat Node kan ontbreken; werkmap.mjs), verder-werken
+                   (testmail.mjs, logboek.mjs) en nieuwe-app
                    (nieuwe-app.mjs: aanmaken, en --inrichten start de workflow in de
                    beheer-repo van de klant; plus ruleset.json voor main)
 lib/               de kern: manifest lezen, toepassen, PR-tekst, git- en PR-stappen
@@ -393,6 +396,17 @@ gestart vanuit `Stack/bin/stack-sync.mjs`, dat het register en de ruleset meegee
   (de lijst `vervangen`, plus `.github/CODEOWNERS` en alles onder `.github/workflows/`
   en `.claude/`). Zonder manifest, of met een andere `variant` dan `light`, doet hij niets. `STACK_ALLOW_POLICY_EDIT=1` laat
   padbewerkingen door, voor onderhoud aan de template zelf.
+- **Werkmap** (uitgave 39, `lib/werkmap.mjs`). Heeft de projectmap geen manifest, dan kijkt de
+  hook één niveau dieper. Staan daar apps van deze tier (geen git-worktrees), dan zegt hij
+  bij sessiestart één regel: welke apps, dat wijzigingen via verder-werken in de map van de
+  app gaan, en alleen als er een achterloopt ook welke (de versie op afstand hooguit één keer
+  per dag, stempel `werkmap_<map>.json`). Niets uit een logboek. Bij PreToolUse beoordeelt
+  de bewaker een bestand in de map van zijn app; de Bash-regels gelden als de opdracht in een
+  app draait (cwd, `cd <app>`, `git -C <app>`, `pnpm --dir <app>`, `--repo <eigenaar>/<app>`),
+  dus niet voor bijvoorbeeld de architectuur-repo ernaast. `skills/installatie/scripts/werkmap.mjs`
+  zet in de werkmap een `CLAUDE.md` (blok tussen markeringen) en per app een preview in
+  `.claude/launch.json` (`.claude/stagetwo-preview.mjs` gaat naar de map van de app en start
+  daar `scripts/preview.mjs`).
 - Sinds uitgave 39 leest de bewaker ook Bash-opdrachten op schrijven naar die paden: een
   omleiding (`>`, `>>`), `tee`, `sed -i`, `perl -i`, `cp`, `mv`, `rm`, `touch`, `truncate`,
   `dd of=`, `git rm`, `git mv`, en een `node -e` of `python -c` die een beschermd pad noemt en
@@ -484,11 +498,14 @@ mag starten; de sleutels staan in de omgeving `beheer` en zijn voor hem niet te 
    in zijn instellingen) tegen. Een gewone run (ook vanuit `/stagetwo-tier1:updaten`) laat
    dat staan, alleen `--aan` zet het terug. De plugin bijwerken gaat dan met
    `/stagetwo-tier1:updaten`.
-6. Loop de melding en `/stagetwo-tier1:updaten` één keer samen door, en `/stagetwo-tier1:nieuwe-app` als
+6. Laat elke bouwer `/stagetwo-tier1:installatie` draaien in de map waarin zijn apps staan;
+   stap 7 daarvan zet daar een `CLAUDE.md` en de previews (één keer per bouwer en per
+   computer, niet in git). Zet het op de lijst met handmatige stappen van de klant.
+7. Loop de melding en `/stagetwo-tier1:updaten` één keer samen door, en `/stagetwo-tier1:nieuwe-app` als
    de klant zelf apps gaat starten. Worker, deur, D1 en R2 richt de workflow "App
    inrichten" in `<klantorg>/stagetwo-beheer-tier1` in; die toegang komt nooit op de computer
    van de klant (besluit 22-09-2026).
-7. Zet in `Stack/projecten.json` de `route` van het project op `plugin`; een app die de
+8. Zet in `Stack/projecten.json` de `route` van het project op `plugin`; een app die de
    klant zelf met `/stagetwo-tier1:nieuwe-app` maakte, voeg je toe zodra hij hem meldt.
 
 ### Een nieuwe versie uitbrengen
