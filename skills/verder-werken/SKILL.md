@@ -85,6 +85,10 @@ Template-versie 24 en nieuwer; bij een oudere versie geldt wat in de route van d
 
 Wat verder bij deze route hoort, en wat de route zelf ook noemt:
 
+- **Een nieuw onderdeel** (een eigen pad met een tegel op de startpagina) krijgt een regel in
+  `src/onderdelen.ts` (`pad`, `naam` en zo nodig `kop`, de kop van het hoofdscherm). De
+  browsertest `e2e/onderdelen.spec.ts` opent het dan vanzelf, en een unittest wordt rood als
+  er een hoofdpad bij komt zonder regel in die lijst.
 - **Raakt de wijziging de database** (een tabel, kolom of index), lees dan ook
   `docs/routes/databasewijziging.md` in zijn geheel en volg die stappen. Een migratie is
   een nieuw bestand in `migrations/`; de hook van de plugin herinnert je aan de route
