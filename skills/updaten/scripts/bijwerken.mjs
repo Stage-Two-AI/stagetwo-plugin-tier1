@@ -244,7 +244,7 @@ export function droogloop({ checkout, opAfstand = null, env = process.env }) {
       return mislukt(`de open pull requests van ${repo} zijn niet op te vragen: ${eersteRegel(fout)}`);
     }
     if (andere && andere.headRefName !== branch) {
-      return gestopt(`er staat al een pull request open voor versie ${doel}, geopend door Stage Two: ${andere.url}; merge die, of vraag Stage Two hem te sluiten`, { pr: andere });
+      return gestopt(`er staat al een pull request open voor versie ${doel}, geopend door Stage Two: ${andere.url}; merge die, of sluit hem zelf op GitHub (Close pull request) en draai dit opnieuw`, { pr: andere });
     }
   }
 
@@ -439,7 +439,7 @@ function uitlegNaPush({ gepusht, pr, repo, branch, resultaat }) {
   else if (repo) regels.push(`De branch ${branch} staat op GitHub; open de pull request hier: ${vergelijkUrl(repo, branch)}`);
   else regels.push(`De branch ${branch} staat op je origin.`);
   if (!gepusht) regels.push("De inhoud stond al zo op GitHub; er is niets opnieuw gepusht.");
-  regels.push("Wacht tot de checks groen zijn en druk dan op Merge. Rood? Neem contact op met Stage Two, zet de check niet uit.");
+  regels.push("Wacht tot de checks groen zijn en druk dan op Merge. Rood? Zet de check niet uit: los het op met /stagetwo-tier1:verder-werken (een eigen pull request) en draai daarna /stagetwo-tier1:updaten opnieuw.");
   if (resultaat.overgeslagen.length > 0) {
     regels.push(`${resultaat.overgeslagen.length} bestand(en) zijn niet bijgewerkt omdat ze lokaal afwijken; dat staat in de pull request.`);
   }

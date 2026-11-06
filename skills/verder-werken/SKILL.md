@@ -66,8 +66,9 @@ Template-versie 24 en nieuwer; bij een oudere versie geldt wat in de route van d
   zie je het inlogscherm van Access, vraag de gebruiker dan één keer in te loggen in het paneel
   (de tools `Claude_Browser`; zijn die er niet, dan Claude in Chrome).
 - **Een fout uit productie?** Kijk eerst in Sentry, via de koppeling Sentry in claude.ai. Staat
-  die niet aan, zeg dan dat Stage Two hem in een kort gesprek koppelt, en vraag de gebruiker
-  intussen de foutmelding of een schermafbeelding.
+  die niet aan, zeg dan dat wie de Sentry-login van het bedrijf heeft (in de projectfase Stage
+  Two, daarna de owner) hem in claude.ai aanzet onder Instellingen, Connectors, Sentry, en vraag
+  de gebruiker intussen de foutmelding of een schermafbeelding.
 - **Het testadres.** Draai één keer per app
   `node "${CLAUDE_SKILL_DIR}/scripts/testmail.mjs"`. Geeft dat `leeg`, vraag dan naar welk
   adres de testmails van deze app mogen (stel het adres van de gebruiker voor), zet het met
@@ -99,6 +100,10 @@ Wat verder bij deze route hoort, en wat de route zelf ook noemt:
     binnen ziet alles, zoals `items` in de template), dan staat hij met een reden in
     `open_tabellen` in `stack.config.json` en hoeft de test niet. De Kwaliteitspoort zoekt per
     tabel naar een van de twee.
+  - Meldt `guard:tabellen-tests` een bestaande tabel zonder A/B-test (de update-PR noemde hem "nog zonder
+    test"), schrijf die test dan mee in de pull request van dit werk, zonder dat de gebruiker
+    erom vraagt, op dezelfde manier als voor een nieuwe tabel (in `worker/`). Begrijp je niet wie
+    een rij mag maken of zien, vraag het de gebruiker in één vraag. Noem het in de PR-tekst.
 - **Servercode** staat in `worker/` en gaat met de rest van de app mee bij de uitrol na de
   merge. Er is geen aparte stap om hem live te zetten. Zelf `wrangler deploy` of iets met
   `--remote` draaien kan en mag niet: op deze computer is geen Cloudflare-toegang.

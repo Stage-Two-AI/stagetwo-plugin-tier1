@@ -104,7 +104,7 @@ Vier commando's, en een bewaker op de achtergrond:
   voorstel (een pull request) dat jij bekijkt en goedkeurt. Daarna vraagt hij of je
   andere apps ook mee moeten. Je eigen werk raakt hij niet aan. Heeft een nieuwe versie
   eenmalig iets in een eigen bestand nodig (zoals de lijst met onderdelen in versie 39), dan
-  staat dat apart in het voorstel; daar hoef je niets voor te doen. Ontbreekt bij een tabel de A/B-test (gebruiker B komt niet bij de rij van A), dan schrijft hij die in hetzelfde voorstel, onder een eigen kopje; daar hoef je niets voor te doen. Mist de inrichting iets (Sentry), dan biedt hij aan App inrichten te starten of zegt hij dat Stage Two het doet.
+  staat dat apart in het voorstel; daar hoef je niets voor te doen. Ontbreekt bij een tabel de A/B-test (gebruiker B komt niet bij de rij van A), dan schrijft hij die in hetzelfde voorstel, onder een eigen kopje; daar hoef je niets voor te doen. Mist de inrichting iets (Sentry), dan biedt hij aan App inrichten te starten, of zegt hij wat er tot dan niet werkt en wie in je organisatie (de owner van de beheer-repo) het met welke opdracht start. Niets daarvan houdt je tegen.
 
 Er komt geen wachtwoord, sleutel of computer van Stage Two aan te pas. Alles loopt via je
 eigen GitHub-account en je eigen computer.
@@ -465,8 +465,8 @@ PATH van elke sessie waarin de plugin aanstaat, ook bij klanten.
   (de skill zegt hoe, zonder het de bouwer te vragen); de tweede aanroep laat alleen die paden
   toe, zet ze met de biome van de checkout in opmaak en zet ze in de PR onder een eigen kopje.
 - Controles (`lib/controles.mjs`, `skills/updaten/scripts/controles.mjs`): mist de inrichting
-  Sentry, dan een aanbod om App inrichten te starten, of een regel dat Stage Two het doet.
-- Sentry koppelen in de beheer-repo is een stap van Stage Two in de projectfase:
+  Sentry, dan een aanbod om App inrichten te starten, of wat er niet werkt en wat de owner start.
+- Sentry koppelen in de beheer-repo: in de projectfase door Stage Two, daarna door de owner:
   `skills/installatie/scripts/sentry-koppelen.mjs` (gh vraagt om het token, niemand ziet de
   waarde), daarna start het App inrichten voor elke app.
 
@@ -480,7 +480,7 @@ Trust) en `<klantorg>/stagetwo-beheer-tier1` is ingericht met de tier 1-variant 
 mag starten; de sleutels staan in de omgeving `beheer` en zijn voor hem niet te lezen. Sentry koppelt Stage Two in de beheer-repo vóór de eerste app, in een eigen terminal:
 `node skills/installatie/scripts/sentry-koppelen.mjs --beheer <klantorg>/stagetwo-beheer-tier1 --sentry-org <slug>`
 (gh vraagt om het token; daarna geeft App inrichten elke app vanzelf een Sentry-project). Dat is
-nooit een stap voor de klant.
+nooit een stap voor de bouwer; na de overdracht doet de owner het zelf, met zijn eigen Sentry-account.
 
 1. Op Windows eerst Git (`winget install -e --id Git.Git` in PowerShell), dán de
    Claude-app. Plugin installeren zoals hierboven onder "Installeren" (desktop-app: één

@@ -6,8 +6,9 @@
  *   node controles.mjs --json [--repo <eigenaar>/<naam>]
  *
  * Mist er iets, dan zegt `inrichting` of de bouwer App inrichten zelf kan starten
- * (`kanStarten`, met `opdracht`), of wat Stage Two doet (`stageTwo`). Starten doet dit script
- * niet: de skill vraagt het eerst. Eén JSON-object met `status`: klaar | mislukt (`reden`).
+ * (`kanStarten`, met `opdracht`), of wat de owner van de beheer-repo doet (`owner`, met
+ * `ownerOpdracht`), en wat er tot dan niet werkt (`gevolgen`). Niets blokkeert. Starten doet dit
+ * script niet: de skill vraagt het eerst. Eén JSON-object met `status`: klaar | mislukt (`reden`).
  */
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
