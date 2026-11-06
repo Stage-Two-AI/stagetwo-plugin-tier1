@@ -36,7 +36,7 @@
  * De reden bevat nooit een token: een URL met login wordt afgeplakt.
  */
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { controleer as controleerAbTests } from "../../../lib/abtests.mjs";
+import { controleer as controleerAbTests, openNaAntwoord, STACK_CONFIG as AB_CONFIG } from "../../../lib/abtests.mjs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -193,7 +193,7 @@ export function anderSpoor(manifest) {
     variant === "cloudflare"
       ? "deze app komt uit de template voor tier 2 van Stage Two (Cloudflare met Supabase); die werk je bij met /stagetwo-tier2:updaten van de andere Stage Two-plugin, niet met deze"
       : variant === undefined || variant === null
-        ? "deze app komt uit een oudere template van Stage Two die deze plugin niet bijwerkt; vraag Stage Two hoe deze app bij te werken"
+        ? "deze app komt uit een oudere template van Stage Two die deze plugin niet bijwerkt; hij blijft werken zoals hij is. Overstappen naar tier 1 is herbouwen: zet het met Claude op een rij in /stagetwo-tier1:verder-werken (wie dat liever uitbesteedt, kan het als betaald werk door Stage Two laten doen)"
         : `deze app heeft variant ${JSON.stringify(variant)} in .claude/stack-manifest.json en is niet van tier 1; deze plugin werkt alleen apps uit de template voor tier 1 bij`;
   return { status: "ander-spoor", reden };
 }
@@ -232,7 +232,7 @@ export function droogloop({ checkout, opAfstand = null, env = process.env }) {
 
   const tmplRepo = templateRepo(env);
   const doel = versieOpAfstand(tmplRepo);
-  if (doel === null) return mislukt(`de template is niet bereikbaar (${tmplRepo}): geen netwerk, nog geen versie-tag, of de repo bestaat niet of is niet openbaar; probeer het later opnieuw, en geef deze melding door aan Stage Two als het dan nog niet lukt`);
+  if (doel === null) return mislukt(`de template is niet bereikbaar (${tmplRepo}): geen netwerk, nog geen versie-tag, of de repo bestaat niet of is niet openbaar; probeer het later opnieuw; lukt het dan nog niet, draai /stagetwo-tier1:installatie (die zet de plugin naar de kopie in de eigen organisatie)`);
   if (opAfstand === null && leesVersie(checkout) >= doel) return alBij(leesVersie(checkout), doel);
 
   const branch = branchNaam(doel);
@@ -374,8 +374,15 @@ export function voerUit({ werkmap, losOp, koppen = {}, updates = null }) {
     const nogOvergeslagen = resultaat.overgeslagen.filter((s) => !opgelost.some((o) => o.pad === s.pad)).map(({ verschil: _, ...rest }) => rest);
 
     // De A/B-tests die Claude tussen de twee aanroepen schreef: alleen de paden uit de droogloop.
-    const ab = controleerAbTests({ map: kloon, node: nodeVoorKern(), abTests: resultaat.abTests ?? null });
-    formatteer({ kloon, checkout, paden: ab.paden });
+    // Zei de bouwer dat iedereen in de app een tabel mag zien, dan staat zijn antwoord nu als
+    // reden in open_tabellen; alleen zo'n nieuwe regel mag erbij.
+    const antwoord = openNaAntwoord({ map: kloon, abTests: resultaat.abTests ?? null });
+    if (antwoord.fout) {
+      verwijderWerkmap(werkmap);
+      return gestopt(antwoord.fout);
+    }
+    const ab = controleerAbTests({ map: kloon, node: nodeVoorKern(), abTests: resultaat.abTests ?? null, open: antwoord.open });
+    formatteer({ kloon, checkout, paden: ab.paden.filter((p) => p !== AB_CONFIG) });
 
     // De controle op zichzelf, nog een keer: ook na de keuzes mag alleen het manifest geraakt zijn.
     const magOok = new Set([...toegestaneBestandenVan(manifest), ...resultaat.verwijderd, ...(resultaat.projectbestanden ?? []), ...ab.paden, LOCKFILE]);

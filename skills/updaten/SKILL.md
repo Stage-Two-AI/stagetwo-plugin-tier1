@@ -15,7 +15,7 @@ gebruiker. De uitzonderingen zijn de A/B-tests in 3b (in de tijdelijke kopie, op
 het script noemt) en deel 4b (één bestand, als eigen pull request). Mergen doet de gebruiker
 zelf.
 
-De gebruiker bouwt zelf; Stage Two richt in en begeleidt. Nieuwe versies komen uit de kopie
+De gebruiker bouwt zelf; in de projectfase richt Stage Two in en begeleidt het. Nieuwe versies komen uit de kopie
 van plugin en template die Stage Two bij de start in de GitHub-organisatie van de klant
 klaarzet (`levering.json`); Stage Two zet daar nieuwe versies in zolang het abonnement loopt, en past elke versie eerst toe op zijn
 eigen apps. Na de overdracht heeft Stage Two standaard zelf geen toegang tot de apps en zet het daar
@@ -136,7 +136,7 @@ het betekent, in hooguit drie regels; gebruik daarvoor `samenvatting` als die er
   deel 5.
 - `ander-spoor`: deze app hoort bij tier 2 van Stage Two (Cloudflare met Supabase) of
   bij een oudere template van Stage Two, en dus niet bij deze plugin. Geef `reden` door (die
-  noemt het juiste commando of verwijst naar Stage Two), sla deel 4 over en ga door naar deel 5. Werk zo'n app nooit met deze plugin bij.
+  noemt het juiste commando of zegt wat er met de app kan), sla deel 4 over en ga door naar deel 5. Werk zo'n app nooit met deze plugin bij.
 - `mislukt` of `gestopt`: `reden` is één zin met wat de gebruiker moet doen. Geef die
   door en ga door naar 3e. Probeer het niet te omzeilen en verzin geen andere weg.
 - `klaar`: de werkkopie staat klaar. Ga door naar 3b.
@@ -145,17 +145,26 @@ Het script raakt alleen bestanden van de template, met één uitzondering: een v
 eenmalig iets in een bestand van het project nodig heeft, anders is de pull request zelf rood.
 Die bestanden staan in `projectbestanden`. Bij de overstap naar versie 39 is dat `src/onderdelen.ts`, als hij ontbreekt:
 de lijst met onderdelen die de nieuwe browsertest één voor één opent, gevuld uit de routes van
-de app (`onderdelen`), met `/` altijd erbij. Zie 3b.
+de app (`onderdelen`) met de zoekregel van de template (`scripts/lib/onderdelen.mjs`: een router,
+of een keuze op het pad zoals `pathname === "/plugin"`), met `/` altijd erbij. Zie 3b.
 
 ### 3b: alleen bij overgeslagen bestanden een vraag
 
 **Eerst de koppen van de onderdelen** (alleen als `onderdelen` in het antwoord staat). De
 browsertest zoekt per onderdeel de kop (h1) van het hoofdscherm, en die kan het script niet
-weten. Zoek per pad in `onderdelen.onderdelen` in de code van de app (alleen lezen, niets
-wijzigen) welk scherm daar opent en wat zijn h1 is, en geef die in 3c mee met
-`--kop "<pad>" "<kop>"`. Is de kop gelijk aan de `naam`, of vind je geen vaste kop (hij komt
-uit de gegevens), laat `--kop` voor dat pad dan weg en noem het in deel 6. Bij een andere app
-(deel 5, `--repo`) staat de code niet op deze computer: laat `--kop` dan weg en noem het ook.
+weten. Zoek per pad in `onderdelen.onderdelen` in de code van de app onder `<werkmap>/app/`
+(alleen lezen, niets wijzigen; zo gaat het ook bij een andere app met `--repo`) welk scherm daar
+opent en wat zijn h1 is, en geef die in 3c mee met `--kop "<pad>" "<kop>"`.
+
+- Komt de kop uit gegevens (een tekst uit de database of een instelling die de gebruiker kan
+  aanpassen), geef dan de standaardtekst mee: wat het scherm toont als er niets is aangepast,
+  zoals de terugvaltekst in de code of de waarde die een migratie of de testgegevens erin zetten.
+  De browsertest draait op een testdatabase zonder aanpassingen en ziet dus die standaardtekst.
+- Is de kop gelijk aan de `naam`, laat `--kop` dan weg.
+- Heeft het scherm echt geen h1, laat `--kop` dan weg en noem het in deel 6: de browsertest van
+  dat onderdeel is dan rood, en Claude zet het met de bouwer recht in
+  `/stagetwo-tier1:verder-werken` (een h1 erbij, of het pad in `GEEN_ONDERDEEL`).
+
 Dit is geen vraag aan de gebruiker.
 
 **Dan de A/B-tests** (alleen als `abTests` in het antwoord staat). Dit doe je zelf, zonder het
@@ -178,14 +187,22 @@ bouwer. Per tabel in `abTests.tabellen` schrijf je één bestand, precies op het
   opmaak zoals de rest van de app (biome: twee spaties, dubbele aanhalingstekens, puntkomma's);
   staat de app op deze computer, dan zet het script de opmaak in 3c zelf recht.
 - Schrijf niets anders en wijzig geen bestaand bestand. Het script laat in 3c alleen deze paden
-  toe en zet ze in de pull request onder een eigen kopje ("A/B-tests voor tabellen die er nog
-  geen hadden"), los van de templatebestanden. Toont de servercode alle rijen van een tabel aan
+  toe (en de regels in `open_tabellen` hieronder) en zet ze in de pull request onder een eigen
+  kopje ("A/B-tests voor tabellen die er nog geen hadden"), los van de templatebestanden.
+  Toont de servercode alle rijen van een tabel aan
   iedereen die binnen is, of begrijp je de tabel niet, vraag het de gebruiker dan in één vraag
-  (bijvoorbeeld "mag iedereen die binnen is alle notities zien?"). Weet hij het ook niet, sla de
-  tabel dan over: het script noemt hem in de pull request als waarschuwing "nog zonder test", en
-  `/stagetwo-tier1:verder-werken` schrijft hem met hem mee als hij aan deze app werkt. Dat
-  blokkeert niets. Zet een tabel nooit zelf in `open_tabellen`: dat is een keuze over wie
-  wat mag zien.
+  (bijvoorbeeld "mag iedereen die in de app is alle notities zien?").
+- Zegt hij dat iedereen in de app alle rijen van die tabel mag zien, dan schrijf je geen test
+  maar zet je zijn antwoord als reden in `<werkmap>/app/stack.config.json`, onder `open_tabellen`
+  (maak die sleutel aan als hij er niet is): `"<tabel>": "<zijn antwoord in gewone taal, met wie
+  het zei en de datum>"`, bijvoorbeeld `"notities": "iedereen in het bedrijf mag alle notities
+  zien (Piet, 06-11-2026)"`. Alleen voor een tabel uit `abTests.tabellen`, en verder niets in dat
+  bestand veranderen: het script controleert dat in 3c en zet de tabel in de pull request onder
+  "Tabellen die iedereen in de app mag zien". Zonder zijn antwoord zet je nooit een tabel in
+  `open_tabellen`: dat is een keuze over wie wat mag zien.
+- Weet hij het niet, sla de tabel dan over: het script noemt hem in de pull request als
+  waarschuwing ("Tabellen nog zonder A/B-test"), en `/stagetwo-tier1:verder-werken` schrijft de
+  test met hem mee als hij aan deze app werkt. Dat blokkeert niets.
 
 Noem dit in deel 6 in één regel; het is geen vraag aan de gebruiker.
 
@@ -239,7 +256,8 @@ Onthoud voor de samenvatting aan het eind (deel 6), in gewone taal:
 1. wat er is bijgewerkt en waarom (een nieuwere versie van de gedeelde werkwijze), en
    wat er niet is bijgewerkt (de bestanden waarvoor hij **eigen** koos); en of er eenmalig
    een eigen bestand bij zat (`projectbestanden`) en wat er in `voorDeBouwer` staat; en
-   voor welke tabellen er een A/B-test bij kwam (`abTests.geschreven`);
+   voor welke tabellen er een A/B-test bij kwam (`abTests.geschreven`) en welke op zijn antwoord in
+   `open_tabellen` kwamen (`abTests.open`);
 2. waar de pull request staat (`pr.url`, of anders `vergelijkUrl` om hem zelf te openen);
 3. wat hij nu doet: de pull request bekijken, wachten tot de checks groen zijn en op
    Merge drukken. Zijn de checks rood, dan voldoet de app niet aan een nieuwe regel.
@@ -276,7 +294,11 @@ werkt (`gevolgen`). Niets hiervan blokkeert de gebruiker:
 
 ## Deel 4: de afhankelijkheden van deze app
 
-Een eigen pull request, los van die van de template (één PR = één onderwerp):
+Een eigen pull request, los van die van de template (één PR = één onderwerp). Pas na deel 3c:
+staat de pull request van de template open, dan bouwt het script daarop voort (met zijn
+`package.json`, `biome.json` en workflows), zodat de nieuwe pakketten niet met de oude
+instellingen van main worden getest. De PR-tekst zegt dan dat de template-PR eerst gemerged
+moet worden (`opTemplate` in het antwoord):
 
 ```sh
 node "${CLAUDE_SKILL_DIR}/scripts/afhankelijkheden.mjs" --json
@@ -295,8 +317,8 @@ Bij `gepusht` en `bij` staan er twee lijsten bij. `hoofdversies`: pakketten met 
 nieuwe hoofdversie, die bewust niet zijn meegenomen; noem ze. Zeg erbij: Dependabot stelt
 in elke app updates van de npm-pakketten voor, ook zonder abonnement (de versies van de
 GitHub-workflows komen met een nieuwe templateversie); een grote versie van een pakket van de app zet de bouwer zelf
-door, met jouw hulp, als een gewone wijziging via `/stagetwo-tier1:verder-werken`, of
-Stage Two doet het op verzoek tegen nacalculatie (€120 per uur exclusief btw). Wijzigingen
+door, met jouw hulp, als een gewone wijziging via `/stagetwo-tier1:verder-werken`; wie het liever uitbesteedt, kan
+het op verzoek door Stage Two laten doen, tegen nacalculatie (€120 per uur exclusief btw). Wijzigingen
 aan apps vallen buiten het abonnement. Begin er niet zelf aan zonder dat de gebruiker
 erom vraagt. `dependabot`: voorstellen van Dependabot die nog openstaan; noem ze en zeg dat de
 gebruiker ze kan mergen als de checks groen zijn.
@@ -328,16 +350,17 @@ update klaarstaat. Laat de app die open staat (`huidige: true`) weg; die is al g
   krijgt die iemand moet nakijken en mergen. Werk nooit apps bij die niet gekozen zijn.
 
 Voor elke gekozen app zonder `openPR`, één voor één: loop deel 3 door met `--repo` erbij
-(de app hoeft niet op deze computer te staan), en daarna deel 4 met `--repo`:
+(de app hoeft niet op deze computer te staan), en pas daarna deel 4 met `--repo`, dus als de
+pull request van de template er staat:
 
 ```sh
 node "${CLAUDE_SKILL_DIR}/scripts/bijwerken.mjs" --json --droogloop --repo "<eigenaar>/<naam>"
+# 3b en 3c zoals bij deze app; de tweede aanroep (--werkmap) heeft geen --repo nodig
 node "${CLAUDE_SKILL_DIR}/scripts/afhankelijkheden.mjs" --json --repo "<eigenaar>/<naam>"
 ```
 
-De tweede aanroep van deel 3 (`--werkmap`) blijft gelijk; `--repo` hoeft daar niet bij. De
-A/B-tests schrijf je net zo (de code staat in `<werkmap>/app/`); daarna 3e met `--repo`.
-Overgeslagen bestanden leg je net zo voor als bij deze app.
+Overgeslagen bestanden leg je net zo voor als bij deze app, en de A/B-tests schrijf je net zo
+(de code staat in `<werkmap>/app/`). Daarna 3e met `--repo`.
 
 ## Deel 6: samenvatting
 

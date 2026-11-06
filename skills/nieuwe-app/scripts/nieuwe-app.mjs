@@ -46,7 +46,7 @@
  *   gemaakt      (na --doe-het) de app staat op GitHub en op deze computer; zie `nogTeDoen`
  *   ingericht    (na --inrichten) Worker, deur, database en bestanden staan; zie `resultaat`
  *   wacht-op-toegang (na --inrichten) de app staat nog niet in toegang.json; zie `pr`
- *   geen-beheer  (na --inrichten) deze eigenaar heeft geen beheer-repo; Stage Two koppelt
+ *   geen-beheer  (na --inrichten) deze eigenaar heeft (nog) geen beheer-repo; in de projectfase koppelt Stage Two
  *   mislukt      een voorwaarde ontbreekt of een stap faalde; `reden` is één zin met één
  *                handeling. Was de repo al aangemaakt, dan staat hij in `repo`.
  *
@@ -317,7 +317,7 @@ export function zetCloudflareNamen(map, naam) {
   for (const [omgeving, sleutels] of Object.entries(geteld)) {
     for (const [sleutel, aantal] of Object.entries(sleutels)) {
       if (aantal !== 1) {
-        throw new Error(`wrangler.jsonc heeft ${aantal} keer "${sleutel}" voor ${omgeving}, verwacht precies één; meld dit bij Stage Two`);
+        throw new Error(`wrangler.jsonc heeft ${aantal} keer "${sleutel}" voor ${omgeving}, verwacht precies één; zet wrangler.jsonc met Claude recht (precies één per omgeving) en draai dit opnieuw`);
       }
     }
   }
@@ -380,14 +380,14 @@ export function zetLicentie(map, organisatie) {
 
 /** Foutbewaking staat per app aan, op de app-repo zelf; de beheer-repo geeft geen gedeelde DSN door. */
 export const SENTRY_REGEL =
-  "Foutbewaking (Sentry): niets met de hand. App inrichten geeft deze app een eigen Sentry-project en zet de DSN op de app-repo (VITE_SENTRY_DSN op production en preview), zodra Stage Two Sentry één keer heeft gekoppeld; de overdracht controleert het per app.";
+  "Foutbewaking (Sentry): niets met de hand. App inrichten geeft deze app een eigen Sentry-project en zet de DSN op de app-repo (VITE_SENTRY_DSN op production en preview), zodra Sentry één keer is gekoppeld (in de projectfase door Stage Two, daarna door de owner); de overdracht controleert het per app.";
 
 /** Wat er na het script nog te doen is. */
 export function nogTeDoen({ ruleset }) {
   const lijst = [];
   if (!ruleset.gelukt) {
     lijst.push(
-      "main is nog niet beschermd (meestal: een privérepo op een gratis GitHub-plan). Regel het plan, of vraag Stage Two.",
+      "main is nog niet beschermd (meestal: een privérepo op een gratis GitHub-plan). De owner zet de organisatie op het plan Team (Settings, Billing and plans); draai daarna dit commando opnieuw.",
     );
   }
   lijst.push(
@@ -687,7 +687,7 @@ export function nogTeDoenNaInrichting({ resultaat }) {
     "De eerste uitrol: App inrichten heeft een pull request op de app geopend die de echte database-id's in wrangler.jsonc zet. Merge die zodra de checks groen zijn; dan past Actions de migraties toe en zet de app neer. Tot dan toont het adres \"Deze app wordt ingericht.\", al achter de deur.",
   ];
   if (resultaat?.waarschuwingen?.length) {
-    for (const w of resultaat.waarschuwingen) lijst.push(`Waarschuwing van de inrichting, geef door aan Stage Two: ${w}`);
+    for (const w of resultaat.waarschuwingen) lijst.push(`Waarschuwing van de inrichting (blokkeert niets): ${w}`);
   }
   lijst.push(SENTRY_REGEL);
   return lijst;
@@ -860,7 +860,7 @@ export function richtIn(arg, { cwd = process.cwd(), wachtMs = 5000, maxWachtMinu
   if (!beheer) {
     return {
       status: "geen-beheer",
-      reden: `${arg.eigenaar} heeft geen beheer-repo voor tier 1; Stage Two richt de hosting, de database en de bestanden in`,
+      reden: `${arg.eigenaar} heeft geen beheer-repo voor tier 1; die komt aan het begin van het project (Stage Two zet hem klaar) en richt daarna hosting, database en bestanden in`,
     };
   }
   const repo = `${arg.eigenaar}/${arg.naam}`;
