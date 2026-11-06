@@ -143,8 +143,7 @@ het betekent, in hooguit drie regels; gebruik daarvoor `samenvatting` als die er
 
 Het script raakt alleen bestanden van de template, met één uitzondering: een versie die
 eenmalig iets in een bestand van het project nodig heeft, anders is de pull request zelf rood.
-Die bestanden staan in `projectbestanden`, en wat de gebruiker daarna zelf moet nalopen in
-`voorDeBouwer`. Bij de overstap naar versie 39 is dat `src/onderdelen.ts`, als hij ontbreekt:
+Die bestanden staan in `projectbestanden`. Bij de overstap naar versie 39 is dat `src/onderdelen.ts`, als hij ontbreekt:
 de lijst met onderdelen die de nieuwe browsertest één voor één opent, gevuld uit de routes van
 de app (`onderdelen`), met `/` altijd erbij. Zie 3b.
 
@@ -356,8 +355,8 @@ Sluit af met één overzicht, in gewone taal:
    pijltje **^**, rechtermuisknop op het Claude-icoon, **Afsluiten**; macOS: cmd+Q), open
    hem opnieuw, klik dit gesprek aan in de linkerzijbalk en typ **ga verder**. Is alleen de
    plugin bijgewerkt (deel 2 niet), dan is `/reload-plugins` in dit gesprek ook genoeg.
-4. Staat er iets in `voorDeBouwer`, zeg het per punt in gewone taal; het staat ook in de pull
-   request onder **Voor jou**.
+4. Staat er iets in `voorDeBouwer`, zeg het in gewone taal; het staat ook in de pull request
+   onder **Voor jou**. Daar staat nooit een opdracht: wat updaten niet zelf kan, doet Stage Two.
 5. Gaat een app naar template 34 of nieuwer, zeg dan in één zin wat er nieuw is: de
    assistent kijkt voortaan zelf in de app op deze computer, met een kopie van de echte
    gegevens van vannacht, en mail buiten productie gaat naar één testadres. Bij het

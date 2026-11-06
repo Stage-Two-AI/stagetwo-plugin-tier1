@@ -104,7 +104,7 @@ Vier commando's, en een bewaker op de achtergrond:
   voorstel (een pull request) dat jij bekijkt en goedkeurt. Daarna vraagt hij of je
   andere apps ook mee moeten. Je eigen werk raakt hij niet aan. Heeft een nieuwe versie
   eenmalig iets in een eigen bestand nodig (zoals de lijst met onderdelen in versie 39), dan
-  staat dat apart in het voorstel, onder **Voor jou**. Ontbreekt bij een tabel de A/B-test (gebruiker B komt niet bij de rij van A), dan schrijft hij die in hetzelfde voorstel, onder een eigen kopje; daar hoef je niets voor te doen. Mist de inrichting iets (Sentry), dan biedt hij aan App inrichten te starten of zegt hij dat Stage Two het doet.
+  staat dat apart in het voorstel; daar hoef je niets voor te doen. Ontbreekt bij een tabel de A/B-test (gebruiker B komt niet bij de rij van A), dan schrijft hij die in hetzelfde voorstel, onder een eigen kopje; daar hoef je niets voor te doen. Mist de inrichting iets (Sentry), dan biedt hij aan App inrichten te starten of zegt hij dat Stage Two het doet.
 
 Er komt geen wachtwoord, sleutel of computer van Stage Two aan te pas. Alles loopt via je
 eigen GitHub-account en je eigen computer.
