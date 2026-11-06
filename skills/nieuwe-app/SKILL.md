@@ -57,14 +57,16 @@ een eigen database krijgt. Ga dan door.
 Moet die nieuwe app gegevens van een bestaande app gebruiken, bijvoorbeeld een portaal waarin
 klanten hun eigen orders zien? Dat kan: de nieuwe app leest dan mee en verandert niets aan de
 opbouw van de database, want dat doet alleen de app die hem bezit. Maar het is een keuze met
-een eigen beveiligingsopzet, en die maakt Stage Two samen met de gebruiker. Verwijs naar Stage
-Two en stop hier.
+een eigen beveiligingsopzet die App inrichten niet vanzelf maakt. Zeg dat en stop hier: zet de
+opzet met de gebruiker op een rij in `/stagetwo-tier1:verder-werken`, in de app die de gegevens
+bezit. Wie er hulp bij wil, kan het op verzoek als betaald werk door Stage Two laten doen.
 
 Is het een **openbare website** (vindbaar in Google, zonder inlog)? Dat kan prima: de hele
 app wordt dan publiek en alleen een beheerdeel (bijvoorbeeld `/beheer`) blijft achter de
 deur, zoals bij stagetwo.nl en de fotografiesite. Onthoud het voor stap 4. Alleen bij een
-**webshop met betalingen** of een site waar bezoekers een eigen account krijgen, verwijs je
-naar Stage Two: dat vraagt een eigen opzet voor betalingen of inloggen. Stop dan hier.
+**webshop met betalingen** of een site waar bezoekers een eigen account krijgen, zeg je dat
+dit een eigen opzet voor betalingen of inloggen vraagt die deze template niet heeft; wie er hulp
+bij wil, kan het op verzoek door Stage Two laten doen. Stop dan hier.
 
 ## Stap 2: het idee scherp
 
@@ -97,7 +99,8 @@ echte gegevens raakt. Dat kost per app vrijwel niets.
 - **Eigenaar.** Toon de organisaties van de gebruiker met `gh api user/orgs -q '.[].login'`.
   Kies de organisatie van het bedrijf: daar staat de beheer-repo die hosting, database
   en bestanden inricht, en dan is de app van het bedrijf en niet van één persoon. Is er geen
-  organisatie, zeg dan dat Stage Two die eerst moet aanmaken, en stop hier.
+  organisatie, zeg dan dat de app in een organisatie van het bedrijf hoort, dat de owner die eerst
+aanmaakt (in de projectfase doet Stage Two dat), en stop hier.
 - **Wie erbij mag.** Lees de groepen uit de toegangslijst:
   `gh api repos/<beheer-repo>/contents/toegang.json -H "Accept: application/vnd.github.raw"`.
   De beheer-repo is de repo van de organisatie met "beheer" in de naam en het bestand
@@ -138,7 +141,8 @@ Het antwoord is één JSON-object met een `status`.
 - `klaar`: vat `plan` samen in hooguit vier regels: welke repo, waar op deze computer,
   en wie de reviewer is. Staat `githubPlan` op `free` en is de
   eigenaar een organisatie, zeg dan dat main straks niet beschermd kan worden op het
-  gratis plan en dat Stage Two dat bij de start van het project regelt; doorgaan mag.
+  gratis plan, en dat de owner dat oplost door de organisatie op het plan Team te zetten (in
+  de projectfase regelt Stage Two dat); doorgaan mag.
 
 Zeg dan: "Ik maak hem nu aan; dat duurt een paar minuten." Draai hetzelfde commando met
 `--doe-het` in plaats van `--droogloop`. Vraag geen toestemming meer; het typen van
@@ -155,8 +159,9 @@ plugin in de eigen organisatie wijzen. Pas die bestanden niet zelf aan.
   het antwoord, dan is de repo al aangemaakt: **draai precies hetzelfde `--doe-het`-commando
   nog een keer**. Het script ziet dat de repo uit de template komt en maakt af wat er nog
   ontbreekt (invullen, installeren, committen, pushen, main beschermen, de omgevingen).
-  Lukt het de tweede keer ook niet, stop dan en geef de melding door aan de gebruiker voor
-  Stage Two.
+  Lukt het de tweede keer ook niet, stop dan, geef de melding in gewone taal door en zoek met
+  de gebruiker uit wat er mis is (rechten in de organisatie, het GitHub-plan, het netwerk).
+  Verzin geen omweg buiten het script.
 
   **Zet nooit zelf repo-instellingen met de hand**: geen `gh api .../rulesets`, geen
   omgevingen, geen secrets, geen `git push` naar main. Dat doet alleen het script. Claude
@@ -196,8 +201,9 @@ minuten kan duren. Het antwoord:
   team `toegangsbeheer` zit (anders de owner van de organisatie); zo beslist een mens wie
   bij een app mag. Zeg ook dat je daarna hetzelfde commando nog een keer draait, zonder
   `--groepen`, `--publiek` en `--dicht`. Je kunt intussen al bouwen.
-- `geen-beheer`: deze organisatie heeft (nog) geen beheer-repo. Zeg dat Stage Two de
-  hosting, de database en de bestanden inricht, en loop de `nogTeDoen` van stap 5 langs.
+- `geen-beheer`: deze organisatie heeft (nog) geen beheer-repo. Zeg dat die er aan het begin
+  van het project komt (Stage Two zet hem klaar) en dat hij daarna hosting, database en
+  bestanden inricht; de app zelf is klaar. Loop de `nogTeDoen` van stap 5 langs.
 - `mislukt` met in `reden` "zet de repo erbij": de GitHub App van de beheer-repo ziet alleen
   gekozen repo's, en de gewone GitHub-inlog op deze computer mag die lijst niet aanpassen. Dat
   is geen storing: bij zo'n organisatie gebeurt het bij elke nieuwe app één keer met de hand.
@@ -206,7 +212,8 @@ minuten kan duren. Het antwoord:
   daarna hetzelfde commando opnieuw. Zet de App niet op "All repositories": dan mag de
   beheer-repo ook bij alle andere repo's van de organisatie.
 - `mislukt` om een andere reden: geef `reden` door, met de `url` van de run als die er is.
-  De app zelf is gewoon klaar; alleen de inrichting ontbreekt. Verwijs naar Stage Two.
+  De app zelf is gewoon klaar; alleen de inrichting ontbreekt. Zoek met de gebruiker de oorzaak
+  in de run (`url`); daarna start hij (of de owner) App inrichten opnieuw met hetzelfde commando.
 - `ingericht`: Worker, deur, database en bestanden staan. Het adres van de app staat in
   `adres`; tot de eerste uitrol toont het "Deze app wordt ingericht.", al achter de deur.
   App inrichten opent ook een pull request op de app die de echte database-id's in
@@ -227,8 +234,8 @@ Zeg tot slot, in deze volgorde:
    `worker/` die ze leest en schrijft. Krijgt de app rollen, dan vult de assistent in die
    pull request ook één keer `scripts/lokaal-rol.sql` in, zodat de lokale gebruiker dezelfde
    rol heeft als de bouwer. De eerste merge zet de app echt neer.
-3. Laat Stage Two weten dat deze app bestaat (de naam en waarvoor hij is), zodat Stage Two
-   bij vragen weet over welke app het gaat. Een link naar de repo helpt alleen tijdens het
+3. Hoeft niet: wil de gebruiker Stage Two later over deze app laten meedenken (binnen het
+   abonnement), dan noemt hij de naam en waarvoor hij is. Een link naar de repo helpt alleen tijdens het
    project; na de overdracht kan Stage Two een privé-repo standaard niet openen. Toegang tot de app
    heeft Stage Two niet nodig: nieuwe versies van de werkwijze haalt de gebruiker zelf in de app
    binnen met `/stagetwo-tier1:updaten`.

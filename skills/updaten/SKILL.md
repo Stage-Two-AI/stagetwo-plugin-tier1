@@ -136,7 +136,7 @@ het betekent, in hooguit drie regels; gebruik daarvoor `samenvatting` als die er
   deel 5.
 - `ander-spoor`: deze app hoort bij tier 2 van Stage Two (Cloudflare met Supabase) of
   bij een oudere template van Stage Two, en dus niet bij deze plugin. Geef `reden` door (die
-  noemt het juiste commando of verwijst naar Stage Two), sla deel 4 over en ga door naar deel 5. Werk zo'n app nooit met deze plugin bij.
+  noemt het juiste commando of zegt wat er met de app kan), sla deel 4 over en ga door naar deel 5. Werk zo'n app nooit met deze plugin bij.
 - `mislukt` of `gestopt`: `reden` is één zin met wat de gebruiker moet doen. Geef die
   door en ga door naar 3e. Probeer het niet te omzeilen en verzin geen andere weg.
 - `klaar`: de werkkopie staat klaar. Ga door naar 3b.
@@ -295,8 +295,8 @@ Bij `gepusht` en `bij` staan er twee lijsten bij. `hoofdversies`: pakketten met 
 nieuwe hoofdversie, die bewust niet zijn meegenomen; noem ze. Zeg erbij: Dependabot stelt
 in elke app updates van de npm-pakketten voor, ook zonder abonnement (de versies van de
 GitHub-workflows komen met een nieuwe templateversie); een grote versie van een pakket van de app zet de bouwer zelf
-door, met jouw hulp, als een gewone wijziging via `/stagetwo-tier1:verder-werken`, of
-Stage Two doet het op verzoek tegen nacalculatie (€120 per uur exclusief btw). Wijzigingen
+door, met jouw hulp, als een gewone wijziging via `/stagetwo-tier1:verder-werken`; wie het liever uitbesteedt, kan
+het op verzoek door Stage Two laten doen, tegen nacalculatie (€120 per uur exclusief btw). Wijzigingen
 aan apps vallen buiten het abonnement. Begin er niet zelf aan zonder dat de gebruiker
 erom vraagt. `dependabot`: voorstellen van Dependabot die nog openstaan; noem ze en zeg dat de
 gebruiker ze kan mergen als de checks groen zijn.
