@@ -237,6 +237,51 @@ test("echte run: branch op origin met de identiteit van de klant, main onaangero
   }
 });
 
+/** Zoals de droogloop het zou vinden: één tabel zonder A/B-test (in toestand.json van de werkmap). */
+function metAbTest(werkmap, tabel = "notities") {
+  const pad = join(werkmap, "toestand.json");
+  const t = JSON.parse(readFileSync(pad, "utf8"));
+  t.resultaat.abTests = { tabellen: [tabel], paden: { [tabel]: `worker/afscherming/${tabel}.test.ts` }, hulp: "tests/helpers/afscherming.ts" };
+  writeFileSync(pad, JSON.stringify(t));
+  const test = join(werkmap, "app", "worker", "afscherming", `${tabel}.test.ts`);
+  mkdirSync(join(test, ".."), { recursive: true });
+  writeFileSync(test, `await controleerAfscherming({ tabel: "${tabel}" });\n`);
+}
+
+test("A/B-tests: de test van Claude komt mee in de commit en onder een eigen kopje in de pull request", () => {
+  const w = wereld();
+  try {
+    const d = w.draai(["--droogloop"]);
+    assert.equal(d.status, "klaar", d.reden);
+    metAbTest(d.werkmap);
+    const r = w.draai(["--json", "--werkmap", d.werkmap]);
+    assert.equal(r.status, "gepusht", r.reden);
+    assert.deepEqual(r.abTests.geschreven, [{ tabel: "notities", pad: "worker/afscherming/notities.test.ts" }]);
+    assert.match(git(w.klant.origin, "show", "stack-bijwerken/v9:worker/afscherming/notities.test.ts"), /tabel: "notities"/);
+    const create = w.nep.aanroepen().find((a) => a[0] === "pr" && a[1] === "create");
+    const body = create[create.indexOf("--body") + 1];
+    assert.match(body, /\*\*A\/B-tests voor tabellen die er nog geen hadden\*\*/);
+    assert.match(body, /- `notities`: `worker\/afscherming\/notities\.test\.ts`/);
+    assert.ok(body.endsWith(BEVESTIGING));
+  } finally {
+    w.opruimen();
+  }
+});
+
+test("A/B-tests: alleen de voorspelde paden; een ander nieuw bestand stopt de run", () => {
+  const w = wereld();
+  try {
+    const d = w.draai(["--droogloop"]);
+    metAbTest(d.werkmap);
+    writeFileSync(join(d.werkmap, "app", "src", "ook.ts"), "export const x = 1;\n");
+    const r = w.draai(["--json", "--werkmap", d.werkmap]);
+    assert.equal(r.status, "gestopt");
+    assert.deepEqual(r.buitenManifest, ["src/ook.ts"]);
+  } finally {
+    w.opruimen();
+  }
+});
+
 test("--repo: een andere app bijwerken zonder dat die op deze computer staat, met de globale git-naam", () => {
   const w = wereld();
   const leeg = tijdelijkeMap("lege-map-");
