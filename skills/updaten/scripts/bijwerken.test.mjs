@@ -140,7 +140,8 @@ test("voorcontrole: gh niet ingelogd, geen netwerk, geen manifest, geen schrijfr
     const r = v.draai(["--droogloop"]);
     assert.equal(r.status, "ander-spoor");
     assert.match(r.reden, /oudere template/);
-    assert.match(r.reden, /vraag Stage Two/);
+    assert.match(r.reden, /verder-werken/);
+    assert.doesNotMatch(r.reden, /vraag Stage Two/);
     assert.deepEqual(v.werkmappen(), []);
   } finally {
     v.opruimen();
