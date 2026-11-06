@@ -36,7 +36,7 @@
  * De reden bevat nooit een token: een URL met login wordt afgeplakt.
  */
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { controleer as controleerAbTests } from "../../../lib/abtests.mjs";
+import { controleer as controleerAbTests, openNaAntwoord, STACK_CONFIG as AB_CONFIG } from "../../../lib/abtests.mjs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -374,8 +374,15 @@ export function voerUit({ werkmap, losOp, koppen = {}, updates = null }) {
     const nogOvergeslagen = resultaat.overgeslagen.filter((s) => !opgelost.some((o) => o.pad === s.pad)).map(({ verschil: _, ...rest }) => rest);
 
     // De A/B-tests die Claude tussen de twee aanroepen schreef: alleen de paden uit de droogloop.
-    const ab = controleerAbTests({ map: kloon, node: nodeVoorKern(), abTests: resultaat.abTests ?? null });
-    formatteer({ kloon, checkout, paden: ab.paden });
+    // Zei de bouwer dat iedereen in de app een tabel mag zien, dan staat zijn antwoord nu als
+    // reden in open_tabellen; alleen zo'n nieuwe regel mag erbij.
+    const antwoord = openNaAntwoord({ map: kloon, abTests: resultaat.abTests ?? null });
+    if (antwoord.fout) {
+      verwijderWerkmap(werkmap);
+      return gestopt(antwoord.fout);
+    }
+    const ab = controleerAbTests({ map: kloon, node: nodeVoorKern(), abTests: resultaat.abTests ?? null, open: antwoord.open });
+    formatteer({ kloon, checkout, paden: ab.paden.filter((p) => p !== AB_CONFIG) });
 
     // De controle op zichzelf, nog een keer: ook na de keuzes mag alleen het manifest geraakt zijn.
     const magOok = new Set([...toegestaneBestandenVan(manifest), ...resultaat.verwijderd, ...(resultaat.projectbestanden ?? []), ...ab.paden, LOCKFILE]);
