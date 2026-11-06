@@ -53,7 +53,11 @@ function wereld({ gh = GH_STANDAARD, tagV9 = true, app } = {}) {
 }
 
 test("argumenten en het afplakken van een login in een URL", () => {
-  assert.deepEqual(leesArgumenten(["--json", "--droogloop"]), { json: true, droogloop: true, werkmap: null, losOp: [], checkout: null, repo: null });
+  assert.deepEqual(leesArgumenten(["--json", "--droogloop"]), { json: true, droogloop: true, werkmap: null, losOp: [], koppen: {}, checkout: null, repo: null });
+  assert.deepEqual(leesArgumenten(["--werkmap", "/t/x", "--kop", "/", "Mijn lijst", "--kop", "/klanten", "Alle klanten"]).koppen, {
+    "/": "Mijn lijst",
+    "/klanten": "Alle klanten",
+  });
   assert.equal(leesArgumenten(["--droogloop", "--repo", "klant/voorraad"]).repo, "klant/voorraad");
   assert.deepEqual(leesArgumenten(["--werkmap", "/t/x", "--los-op", "a.yml", "template", "--los-op", "b.yml", "eigen"]).losOp, [
     { pad: "a.yml", keuze: "template" },
@@ -167,20 +171,6 @@ test("voorcontrole: gh niet ingelogd, geen netwerk, geen manifest, geen schrijfr
   }
 });
 
-test("open PR van de beheerde run voor dezelfde versie: gestopt met de URL, niets gekloond", () => {
-  const w = wereld({
-    gh: { ...GH_STANDAARD, "pr list": { stdout: [{ number: 7, headRefName: "stack-sync/v9", url: "https://github.com/klant/app/pull/7" }] } },
-  });
-  try {
-    const r = w.draai(["--droogloop"]);
-    assert.equal(r.status, "gestopt");
-    assert.match(r.reden, /pull\/7/);
-    assert.deepEqual(w.werkmappen(), []);
-  } finally {
-    w.opruimen();
-  }
-});
-
 test("gh pr list faalt: mislukt met een reden over de pull requests, niets gekloond", () => {
   const w = wereld({ gh: { ...GH_STANDAARD, "pr list": { exit: 1, stderr: "boom" } } });
   try {
@@ -242,6 +232,51 @@ test("echte run: branch op origin met de identiteit van de klant, main onaangero
     assert.ok(!body.includes("Stage Two stack-sync"));
     // Geen commit als Stage Two in de klantrepo vanuit de skill.
     assert.ok(!git(w.klant.origin, "log", "--format=%an", "stack-bijwerken/v9").includes("Stage Two"));
+  } finally {
+    w.opruimen();
+  }
+});
+
+/** Zoals de droogloop het zou vinden: één tabel zonder A/B-test (in toestand.json van de werkmap). */
+function metAbTest(werkmap, tabel = "notities") {
+  const pad = join(werkmap, "toestand.json");
+  const t = JSON.parse(readFileSync(pad, "utf8"));
+  t.resultaat.abTests = { tabellen: [tabel], paden: { [tabel]: `worker/afscherming/${tabel}.test.ts` }, hulp: "tests/helpers/afscherming.ts" };
+  writeFileSync(pad, JSON.stringify(t));
+  const test = join(werkmap, "app", "worker", "afscherming", `${tabel}.test.ts`);
+  mkdirSync(join(test, ".."), { recursive: true });
+  writeFileSync(test, `await controleerAfscherming({ tabel: "${tabel}" });\n`);
+}
+
+test("A/B-tests: de test van Claude komt mee in de commit en onder een eigen kopje in de pull request", () => {
+  const w = wereld();
+  try {
+    const d = w.draai(["--droogloop"]);
+    assert.equal(d.status, "klaar", d.reden);
+    metAbTest(d.werkmap);
+    const r = w.draai(["--json", "--werkmap", d.werkmap]);
+    assert.equal(r.status, "gepusht", r.reden);
+    assert.deepEqual(r.abTests.geschreven, [{ tabel: "notities", pad: "worker/afscherming/notities.test.ts" }]);
+    assert.match(git(w.klant.origin, "show", "stack-bijwerken/v9:worker/afscherming/notities.test.ts"), /tabel: "notities"/);
+    const create = w.nep.aanroepen().find((a) => a[0] === "pr" && a[1] === "create");
+    const body = create[create.indexOf("--body") + 1];
+    assert.match(body, /\*\*A\/B-tests voor tabellen die er nog geen hadden\*\*/);
+    assert.match(body, /- `notities`: `worker\/afscherming\/notities\.test\.ts`/);
+    assert.ok(body.endsWith(BEVESTIGING));
+  } finally {
+    w.opruimen();
+  }
+});
+
+test("A/B-tests: alleen de voorspelde paden; een ander nieuw bestand stopt de run", () => {
+  const w = wereld();
+  try {
+    const d = w.draai(["--droogloop"]);
+    metAbTest(d.werkmap);
+    writeFileSync(join(d.werkmap, "app", "src", "ook.ts"), "export const x = 1;\n");
+    const r = w.draai(["--json", "--werkmap", d.werkmap]);
+    assert.equal(r.status, "gestopt");
+    assert.deepEqual(r.buitenManifest, ["src/ook.ts"]);
   } finally {
     w.opruimen();
   }
