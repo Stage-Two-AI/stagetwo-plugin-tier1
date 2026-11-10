@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { alleBestanden, git, insteadOfEnv, maakKlantRepo, maakTemplateRepo, nepGh, nepPnpm_opPad, opruimen, tijdelijkeMap } from "../../../lib/test-hulp.mjs";
-import { BEVESTIGING, WERKMAP_PREFIX, controleerWerkmap, hoofd, leesArgumenten, zonderLogin } from "./bijwerken.mjs";
+import { BEVESTIGING, WERKMAP_PREFIX, biomeVersie, controleerWerkmap, formatteer, hoofd, leesArgumenten, zonderLogin } from "./bijwerken.mjs";
 
 const SCRIPT = fileURLToPath(import.meta.url).replace(/\.test\.mjs$/, ".mjs");
 
@@ -633,5 +633,38 @@ test("het script als opdracht: --json geeft één JSON-object en de exitcode vol
     w.draai(["--werkmap", r.werkmap]);
   } finally {
     w.opruimen();
+  }
+});
+
+test("biomeVersie: de versie uit package.json, zonder ^ of ~", () => {
+  const map = tijdelijkeMap("biome-versie-");
+  try {
+    writeFileSync(join(map, "package.json"), JSON.stringify({ devDependencies: { "@biomejs/biome": "^2.6.2" } }));
+    assert.equal(biomeVersie(map), "2.6.2");
+    writeFileSync(join(map, "package.json"), JSON.stringify({ devDependencies: { "@biomejs/biome": "latest" } }));
+    assert.equal(biomeVersie(map), null);
+    writeFileSync(join(map, "package.json"), JSON.stringify({}));
+    assert.equal(biomeVersie(map), null);
+  } finally {
+    opruimen(map);
+  }
+});
+
+test("formatteer: zonder Biome op deze computer (--repo) via pnpm dlx in de versie van de app", () => {
+  const kloon = tijdelijkeMap("formatteer-kloon-");
+  const bin = tijdelijkeMap("formatteer-bin-");
+  const pathVoor = process.env.PATH;
+  try {
+    writeFileSync(join(kloon, "package.json"), JSON.stringify({ devDependencies: { "@biomejs/biome": "2.6.2" } }));
+    const log = join(bin, "aanroep.json");
+    writeFileSync(join(bin, "pnpm"), `#!/usr/bin/env node\nrequire("node:fs").writeFileSync(${JSON.stringify(log)}, JSON.stringify(process.argv.slice(2)));\n`);
+    execFileSync("chmod", ["+x", join(bin, "pnpm")]);
+    process.env.PATH = `${bin}:${pathVoor}`;
+    formatteer({ kloon, checkout: null, paden: ["tests/rls/afscherming/deals.test.ts"] });
+    assert.deepEqual(JSON.parse(readFileSync(log, "utf8")), ["dlx", "@biomejs/biome@2.6.2", "check", "--write", "tests/rls/afscherming/deals.test.ts"]);
+  } finally {
+    process.env.PATH = pathVoor;
+    opruimen(kloon);
+    opruimen(bin);
   }
 });
