@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSyn
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
-import { alleBestanden, git, insteadOfEnv, maakKlantRepo, maakTemplateRepo, nepGh, nepPnpm_opPad, opruimen, tijdelijkeMap } from "../../../lib/test-hulp.mjs";
+import { alleBestanden, appBestanden as appBestandenVoorTest, git, insteadOfEnv, maakKlantRepo, maakTemplateRepo, nepGh, nepPnpm_opPad, opruimen, tijdelijkeMap } from "../../../lib/test-hulp.mjs";
 import { BEVESTIGING, WERKMAP_PREFIX, biomeVersie, controleerWerkmap, formatteer, hoofd, leesArgumenten, zonderLogin } from "./bijwerken.mjs";
 
 const SCRIPT = fileURLToPath(import.meta.url).replace(/\.test\.mjs$/, ".mjs");
@@ -53,12 +53,13 @@ function wereld({ gh = GH_STANDAARD, tagV9 = true, app } = {}) {
 }
 
 test("argumenten en het afplakken van een login in een URL", () => {
-  assert.deepEqual(leesArgumenten(["--json", "--droogloop"]), { json: true, droogloop: true, werkmap: null, losOp: [], koppen: {}, checkout: null, repo: null });
+  assert.deepEqual(leesArgumenten(["--json", "--droogloop"]), { json: true, droogloop: true, werkmap: null, losOp: [], koppen: {}, checkout: null, repo: null, templateRef: null });
   assert.deepEqual(leesArgumenten(["--werkmap", "/t/x", "--kop", "/", "Mijn lijst", "--kop", "/klanten", "Alle klanten"]).koppen, {
     "/": "Mijn lijst",
     "/klanten": "Alle klanten",
   });
   assert.equal(leesArgumenten(["--droogloop", "--repo", "klant/voorraad"]).repo, "klant/voorraad");
+  assert.equal(leesArgumenten(["--droogloop", "--template-ref", "uitgave/43"]).templateRef, "uitgave/43");
   assert.deepEqual(leesArgumenten(["--werkmap", "/t/x", "--los-op", "a.yml", "template", "--los-op", "b.yml", "eigen"]).losOp, [
     { pad: "a.yml", keuze: "template" },
     { pad: "b.yml", keuze: "eigen" },
@@ -444,6 +445,228 @@ test("run na de merge: status bij", () => {
   }
 });
 
+/** Een wereld waarin versie 9 nog niet uit is: geen tag stack-v9, wel een branch uitgave/9 op de commit van versie 9. */
+function wereldMetUitgave(opties = {}) {
+  const w = wereld({ tagV9: false, ...opties });
+  git(w.template, "branch", "uitgave/9", "HEAD~1");
+  return w;
+}
+
+test("--template-ref: een branch zonder tag wordt als proef toegepast, met eigen branch en PR-tekst", () => {
+  const w = wereldMetUitgave();
+  try {
+    const mainVoor = git(w.klant.origin, "rev-parse", "main");
+    const d = w.draai(["--json", "--droogloop", "--template-ref", "uitgave/9"]);
+    assert.equal(d.status, "klaar", d.reden);
+    assert.equal(d.van, 8);
+    assert.equal(d.naar, 9);
+    assert.equal(d.branch, "stack-proef/v9");
+    assert.deepEqual(d.proef, { ref: "uitgave/9" });
+    assert.deepEqual(d.verwijderd, ["scripts/guard-oud.mjs"], "het vorige manifest komt nog uit de tag stack-v8");
+    assert.ok(d.samenvatting.some((r) => r.includes("proef") && r.includes("uitgave/9")));
+    // De template-kloon staat op de branch, niet op main (daar staat CLAUDE.md zonder versie).
+    assert.ok(readFileSync(join(d.werkmap, "template", "CLAUDE.md"), "utf8").includes("versie 9"));
+
+    const r = w.draai(["--json", "--werkmap", d.werkmap]);
+    assert.equal(r.status, "gepusht", r.reden);
+    assert.deepEqual(r.proef, { ref: "uitgave/9" });
+    assert.equal(git(w.klant.origin, "rev-parse", "main"), mainVoor);
+    assert.equal(git(w.klant.origin, "branch", "--list", "stack-bijwerken/v9"), "", "geen echte update-branch");
+    assert.equal(git(w.klant.origin, "show", "stack-proef/v9:.claude/stack-version"), "9");
+    assert.match(git(w.klant.origin, "log", "-1", "--format=%B", "stack-proef/v9"), /proef[\s\S]*Stack-bijwerken: v9/);
+    const create = w.nep.aanroepen().find((a) => a[0] === "pr" && a[1] === "create");
+    assert.equal(create[create.indexOf("--head") + 1], "stack-proef/v9");
+    assert.match(create[create.indexOf("--title") + 1], /^Proef: /);
+    const body = create[create.indexOf("--body") + 1];
+    assert.ok(body.startsWith("**Proef, niet mergen.**"));
+    assert.ok(body.includes("`uitgave/9`"));
+    assert.ok(body.includes("vervangen door de echte update"));
+    assert.ok(body.endsWith(BEVESTIGING), "de guards van de app lezen de bevestigingsregel ook bij een proef");
+    // Eén verhaal: nergens een aansporing om te mergen, en de herkomst is de werkplaats.
+    assert.doesNotMatch(body, /merget|op Merge|merge die/i);
+    assert.doesNotMatch(body, /Aangemaakt met|eigen Claude Code-sessie/);
+    assert.match(body, /^Aangemaakt door de werkplaats van Stage Two, als proef/m);
+    assert.match(body, /^Cloudflare-preview: /m, "het PR-formulier vraagt de preview-regel ook bij een proef");
+    assert.match(body, /^Geen tests nodig: /m, "guard:tests leest deze regel ook bij een proef");
+    for (const regel of body.split("\n").filter((x) => /merge/i.test(x))) {
+      assert.match(regel, /niet mergen|merge van de uitgave/, regel);
+    }
+    assert.ok(r.samenvatting.some((regel) => regel.includes("niet mergen")));
+    assert.ok(!r.samenvatting.some((regel) => /op Merge/.test(regel)));
+    assert.deepEqual(w.werkmappen(), []);
+  } finally {
+    w.opruimen();
+  }
+});
+
+test("--template-ref: een proef sluit alleen oudere proeven, nooit een echte update-PR", () => {
+  const w = wereldMetUitgave({
+    gh: {
+      ...GH_STANDAARD,
+      "pr list": {
+        stdout: [
+          { number: 3, headRefName: "stack-bijwerken/v8", url: "https://github.com/klant/app/pull/3" },
+          { number: 4, headRefName: "stack-proef/v8", url: "https://github.com/klant/app/pull/4" },
+        ],
+      },
+    },
+  });
+  try {
+    const d = w.draai(["--droogloop", "--template-ref", "uitgave/9"]);
+    assert.equal(d.status, "klaar", d.reden);
+    assert.equal(w.draai(["--werkmap", d.werkmap]).status, "gepusht");
+    const gesloten = w.nep.aanroepen().filter((a) => a[0] === "pr" && a[1] === "close").map((a) => a[2]);
+    assert.deepEqual(gesloten, ["4"]);
+  } finally {
+    w.opruimen();
+  }
+});
+
+test("--template-ref met --repo: een andere app krijgt de proef ook", () => {
+  const w = wereldMetUitgave();
+  const leeg = tijdelijkeMap("lege-map-");
+  try {
+    const d = w.draai(["--droogloop", "--repo", "klant/app", "--checkout", leeg, "--template-ref", "uitgave/9"]);
+    assert.equal(d.status, "klaar", d.reden);
+    assert.equal(d.branch, "stack-proef/v9");
+    const r = w.draai(["--werkmap", d.werkmap], { GIT_CONFIG_COUNT: "3", GIT_CONFIG_KEY_1: "user.name", GIT_CONFIG_VALUE_1: "Bart Globaal", GIT_CONFIG_KEY_2: "user.email", GIT_CONFIG_VALUE_2: "bart@globaal.example" });
+    assert.equal(r.status, "gepusht", r.reden);
+    assert.equal(git(w.klant.origin, "show", "stack-proef/v9:.claude/stack-version"), "9");
+  } finally {
+    opruimen(leeg);
+    w.opruimen();
+  }
+});
+
+test("--template-ref: onbekende branch, ongeldige naam, al uitgebracht of niet hoger dan de app; nooit een werkmap", () => {
+  const w = wereldMetUitgave();
+  try {
+    const geen = w.draai(["--droogloop", "--template-ref", "uitgave/99"]);
+    assert.equal(geen.status, "mislukt");
+    assert.match(geen.reden, /geen branch uitgave\/99/);
+    assert.deepEqual(w.werkmappen(), []);
+
+    for (const raar of ["--json", "", "a..b", "-x"]) {
+      const r = w.draai(["--droogloop", "--template-ref", raar]);
+      assert.equal(r.status, "mislukt", raar);
+      assert.match(r.reden, /--template-ref/);
+    }
+    assert.deepEqual(w.werkmappen(), []);
+
+    // De branch wijst naar versie 8, en die is al uit (tag stack-v8): dan geen proef.
+    git(w.template, "branch", "uitgave/8", "stack-v8");
+    const uit = w.draai(["--droogloop", "--template-ref", "uitgave/8"]);
+    assert.equal(uit.status, "mislukt");
+    assert.match(uit.reden, /al uitgebracht/);
+    assert.deepEqual(w.werkmappen(), []);
+
+    // De app staat al op 9: de proef heeft niets te doen.
+    writeFileSync(join(w.klant.checkout, ".claude/stack-version"), "9\n");
+    const bij = w.draai(["--droogloop", "--template-ref", "uitgave/9"]);
+    assert.equal(bij.status, "bij", bij.reden);
+    assert.equal(bij.naar, 9);
+    assert.deepEqual(w.werkmappen(), []);
+  } finally {
+    w.opruimen();
+  }
+});
+
+test("--template-ref: de controle op open pull requests geldt ook voor een proef, en ruimt de werkmap op", () => {
+  // gh pr list faalt: stoppen, en de werkmap met de template-kloon van de proef is weg.
+  const f = wereldMetUitgave({ gh: { ...GH_STANDAARD, "pr list": { exit: 1, stderr: "HTTP 502" } } });
+  try {
+    const r = f.draai(["--droogloop", "--template-ref", "uitgave/9"]);
+    assert.equal(r.status, "mislukt");
+    assert.match(r.reden, /open pull requests van klant\/app zijn niet op te vragen: .*HTTP 502/);
+    assert.deepEqual(f.werkmappen(), []);
+  } finally {
+    f.opruimen();
+  }
+
+  // Er staat al een echte update-PR open voor deze versie: niet ernaast een proef zetten.
+  const echt = { number: 7, headRefName: "stack-bijwerken/v9", url: "https://github.com/klant/app/pull/7" };
+  const o = wereldMetUitgave({ gh: { ...GH_STANDAARD, "pr list": { stdout: [echt] } } });
+  try {
+    const r = o.draai(["--droogloop", "--template-ref", "uitgave/9"]);
+    assert.equal(r.status, "gestopt", r.reden);
+    assert.match(r.reden, /er staat al een pull request open voor versie 9/);
+    assert.deepEqual(r.pr, echt);
+    assert.deepEqual(o.werkmappen(), []);
+    assert.equal(git(o.klant.origin, "branch", "--list", "stack-proef/v9"), "", "niets gepusht");
+  } finally {
+    o.opruimen();
+  }
+});
+
+test("--template-ref: een branch met een andere variant dan de app stopt, zonder werkmap", () => {
+  const w = wereldMetUitgave();
+  try {
+    // Een branch van de template voor de andere tier: zelfde versie, ander spoor.
+    git(w.template, "checkout", "-q", "-b", "uitgave/9-ander", "uitgave/9");
+    const pad = join(w.template, ".claude", "stack-manifest.json");
+    writeFileSync(pad, JSON.stringify({ ...JSON.parse(readFileSync(pad, "utf8")), variant: "cloudflare" }));
+    git(w.template, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-q", "-am", "andere variant");
+    git(w.template, "checkout", "-q", "main");
+
+    const r = w.draai(["--droogloop", "--template-ref", "uitgave/9-ander"]);
+    assert.equal(r.status, "mislukt");
+    assert.match(r.reden, /variant "cloudflare"/);
+    assert.match(r.reden, /past dus niet bij deze app \(variant "light", tier 1\)/);
+    assert.deepEqual(w.werkmappen(), []);
+    assert.equal(git(w.klant.origin, "branch", "--list", "stack-proef/*"), "");
+
+    // Zonder de optie verandert er niets: de hoogste tag is stack-v8 en de app staat op 8.
+    const zonder = w.draai(["--droogloop"]);
+    assert.equal(zonder.status, "bij", zonder.reden);
+    assert.equal(zonder.naar, 8);
+  } finally {
+    w.opruimen();
+  }
+});
+
+/**
+ * Wat een gewone update (zonder --template-ref) in deze wereld oplevert, letterlijk vastgelegd
+ * vóór de proef zijn eigen PR-tekst kreeg: titel, tekst, commitbericht en samenvatting moeten
+ * byte voor byte zo blijven.
+ */
+const ZONDER_PROEF = {
+  titel: "Template naar versie 9",
+  tekst: "Deze pull request brengt dit project van stack-versie 8 naar 9.\n\nAangemaakt met /stagetwo-tier1:updaten vanuit je eigen Claude Code-sessie. Hij raakt alleen bestanden die van de gedeelde template zijn, nooit je eigen code.\n\n**Bijgewerkt:**\n- `.claude/stack-manifest.json` (vervangen)\n- `.claude/stack-version` (vervangen)\n- `CLAUDE.md` (vervangen)\n- `.github/workflows/ci.yml` (vervangen)\n- `scripts/guard-nieuw.mjs` (nieuw)\n- `package.json` (sleutels samengevoegd (scripts, devDependencies))\n- `AGENTS.md` (tussen de markeringen)\n- `pnpm-lock.yaml` (opnieuw berekend uit package.json)\n\n**Verwijderd, want dit zit niet meer in de template:**\n- `scripts/guard-oud.mjs`\n\nAlle checks horen groen te zijn. Zo niet, dan voldoet de code van dit project niet\naan een nieuwe regel. Zet de check niet uit: Claude zegt in /stagetwo-tier1:verder-werken wat de regel\nvraagt en past de code aan in een eigen pull request; draai daarna /stagetwo-tier1:updaten opnieuw.\n\nCloudflare-preview: de link komt als reactie van \"Preview uitrollen\" in deze pull request. Deze update raakt wat er online komt (`.github/workflows/ci.yml`, `package.json`, `pnpm-lock.yaml`): open die preview één keer voordat je merget.\n\nGeen tests nodig: dit is een update van de gedeelde template\n\nBevestigd: templatebestanden gewijzigd",
+  bericht: "chore: template naar versie 9\n\nStack-bijwerken: v9",
+  samenvatting: ["Pull request geopend: https://github.com/klant/app/pull/1", "Wacht tot de checks groen zijn en druk dan op Merge. Rood? Zet de check niet uit: los het op met /stagetwo-tier1:verder-werken (een eigen pull request) en draai daarna /stagetwo-tier1:updaten opnieuw."],
+};
+
+test("zonder --template-ref verandert er niets: een branch zonder tag wordt genegeerd", () => {
+  const w = wereldMetUitgave();
+  try {
+    // Hoogste tag is stack-v8 en de app staat op 8: bij, zoals altijd. De branch uitgave/9 telt niet.
+    const r = w.draai(["--json", "--droogloop"]);
+    assert.equal(r.status, "bij", r.reden);
+    assert.equal(r.naar, 8);
+    assert.equal(r.proef, undefined);
+    assert.deepEqual(w.werkmappen(), []);
+  } finally {
+    w.opruimen();
+  }
+  const g = wereld();
+  try {
+    const d = g.draai(["--droogloop"]);
+    assert.equal(d.status, "klaar", d.reden);
+    assert.equal(d.branch, "stack-bijwerken/v9");
+    assert.equal(d.proef, undefined);
+    assert.ok(!d.samenvatting.some((r) => r.includes("proef")));
+    const r = g.draai(["--werkmap", d.werkmap]);
+    assert.equal(r.proef, undefined);
+    const create = g.nep.aanroepen().find((a) => a[0] === "pr" && a[1] === "create");
+    assert.equal(create[create.indexOf("--title") + 1], ZONDER_PROEF.titel);
+    assert.equal(create[create.indexOf("--body") + 1], ZONDER_PROEF.tekst);
+    assert.equal(git(g.klant.origin, "log", "-1", "--format=%B", "stack-bijwerken/v9"), ZONDER_PROEF.bericht);
+    assert.deepEqual(r.samenvatting, ZONDER_PROEF.samenvatting);
+  } finally {
+    g.opruimen();
+  }
+});
+
 test("kapotte toestand.json: mislukt zonder stack trace en de werkmap is weg", () => {
   const w = wereld();
   try {
@@ -666,5 +889,80 @@ test("formatteer: zonder Biome op deze computer (--repo) via pnpm dlx in de vers
     process.env.PATH = pathVoor;
     opruimen(kloon);
     opruimen(bin);
+  }
+});
+
+/**
+ * Een template op versie 9 met een bestand in `alsHetOntbreekt` (e2e/test-user.ts), en een app
+ * op 8 die het mist. Zo stond het bij de generale repetitie van uitgave 43: de droogloop zette
+ * het bestand neer en liet het toe, maar de tweede aanroep stopte met "er zou iets buiten het
+ * manifest wijzigen" (sinds versie 40). Optioneel heeft de app al het lockfile dat pnpm uit de
+ * nieuwe package.json zou berekenen.
+ */
+function wereldMetOntbrekendBestand({ lockfileAlBij = false } = {}) {
+  const w = wereld({
+    tagV9: false,
+    ...(lockfileAlBij ? { app: { ...appBestandenVoorTest(), "pnpm-lock.yaml": "lockfileVersion: 9\n# herberekend uit package.json\n" } } : {}),
+  });
+  git(w.template, "checkout", "-q", "-b", "versie-9", "HEAD~1");
+  const pad = join(w.template, ".claude/stack-manifest.json");
+  const m = JSON.parse(readFileSync(pad, "utf8"));
+  m.vanDeTemplate.alsHetOntbreekt = ["e2e/test-user.ts"];
+  writeFileSync(pad, `${JSON.stringify(m, null, 2)}\n`);
+  mkdirSync(join(w.template, "e2e"), { recursive: true });
+  writeFileSync(join(w.template, "e2e/test-user.ts"), 'export const TEST_USER = { email: "t@voorbeeld.nl" };\n');
+  git(w.template, "add", "-A");
+  git(w.template, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "versie 9 met alsHetOntbreekt");
+  git(w.template, "tag", "stack-v9");
+  return w;
+}
+
+test("alsHetOntbreekt: een app die zo'n bestand mist komt door de droogloop én de tweede aanroep", () => {
+  const w = wereldMetOntbrekendBestand();
+  try {
+    const d = w.draai(["--json", "--droogloop"]);
+    assert.equal(d.status, "klaar", d.reden);
+    assert.ok(d.bijgewerkt.some((b) => b.pad === "e2e/test-user.ts" && /ontbrak/.test(b.hoe)), "de droogloop zet het neer");
+    const r = w.draai(["--json", "--werkmap", d.werkmap]);
+    assert.equal(r.status, "gepusht", `${r.reden} ${JSON.stringify(r.buitenManifest ?? [])}`);
+    assert.equal(
+      git(w.klant.origin, "show", "stack-bijwerken/v9:e2e/test-user.ts"),
+      'export const TEST_USER = { email: "t@voorbeeld.nl" };',
+    );
+    const create = w.nep.aanroepen().find((a) => a[0] === "pr" && a[1] === "create");
+    assert.match(create[create.indexOf("--body") + 1], /`e2e\/test-user\.ts` neer/);
+  } finally {
+    w.opruimen();
+  }
+});
+
+test("alsHetOntbreekt: alleen wat de droogloop neerzette mag erbij; een eigen wijziging aan zo'n bestand stopt", () => {
+  const w = wereldMetOntbrekendBestand();
+  try {
+    const d = w.draai(["--json", "--droogloop"]);
+    assert.equal(d.status, "klaar", d.reden);
+    // Tussen de twee aanroepen verandert iemand een ander bestand van het project.
+    writeFileSync(join(d.werkmap, "app", "README.md"), "# iets anders\n");
+    const r = w.draai(["--json", "--werkmap", d.werkmap]);
+    assert.equal(r.status, "gestopt");
+    assert.deepEqual(r.buitenManifest, ["README.md"]);
+  } finally {
+    w.opruimen();
+  }
+});
+
+test("lockfile: verandert het niet, dan noemen droogloop en pull request het ook niet", () => {
+  const w = wereldMetOntbrekendBestand({ lockfileAlBij: true });
+  try {
+    const d = w.draai(["--json", "--droogloop"]);
+    assert.equal(d.status, "klaar", d.reden);
+    assert.ok(d.bijgewerkt.some((b) => b.pad === "package.json"), "package.json verandert wel");
+    assert.ok(!d.bijgewerkt.some((b) => b.pad === "pnpm-lock.yaml"), "het lockfile bleef gelijk");
+    const r = w.draai(["--json", "--werkmap", d.werkmap]);
+    assert.equal(r.status, "gepusht", r.reden);
+    const create = w.nep.aanroepen().find((a) => a[0] === "pr" && a[1] === "create");
+    assert.ok(!create[create.indexOf("--body") + 1].includes("pnpm-lock.yaml"));
+  } finally {
+    w.opruimen();
   }
 });
