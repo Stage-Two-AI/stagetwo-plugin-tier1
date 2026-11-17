@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { STAGE_TWO } from "../lib/levering.mjs";
 import { pluginBron } from "../lib/plugin-bron.mjs";
-import { controleerToegepast, hoogstePluginVersie, leesAbonnees, leesToegepastTemplate, leesOpties, leveringVoor, leverUit, pluginVersies, templateVersies, uitleverenAanKlant } from "./uitleveren.mjs";
+import { ALLEEN_IN_BRON, controleerToegepast, hoogstePluginVersie, leesAbonnees, leesToegepastTemplate, leesOpties, leveringVoor, leverUit, pluginVersies, templateVersies, uitleverenAanKlant } from "./uitleveren.mjs";
 
 const git = (map, ...args) => execFileSync("git", ["-C", map, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 
@@ -221,6 +221,20 @@ test("workflow Uitleveren: een omschrijving met een dubbele punt staat tussen aa
     const waarde = regel.replace(/^\s+description: /, "");
     if (waarde.includes(": ")) assert.match(waarde, /^['"]/, regel.trim());
   }
+});
+
+test("workflow Taggen: alleen in de bronrepo van Stage Two, maakt een tag alleen aan, en gaat niet mee naar een klant", () => {
+  const yml = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", ".github", "workflows", "taggen.yml"), "utf8");
+  assert.ok(ALLEEN_IN_BRON.includes(".github/workflows/taggen.yml"), "het bestand blijft bij Stage Two");
+  assert.match(yml, new RegExp(`if: github\\.repository == '${STAGE_TWO.plugin}'`), "tweede slot: in een kopie doet hij niets");
+  const aan = yml.slice(yml.indexOf("\non:"), yml.indexOf("\npermissions:"));
+  assert.match(aan, /push:\n\s+branches: \[main\]/);
+  assert.doesNotMatch(aan, /pull_request|workflow_dispatch|schedule/);
+  assert.match(yml, /\npermissions:\n {2}contents: write\n/, "geen sleutel: de workflow vraagt zelf het recht om te schrijven");
+  assert.doesNotMatch(yml, /secrets\./, "geen geheim nodig");
+  // Aanmaken, nooit verplaatsen of weggooien: geen force, geen PATCH of DELETE op een ref.
+  assert.doesNotMatch(yml, /--force|-X (?:PATCH|DELETE)|push .*--tags|git push/);
+  assert.match(yml, /git\/ref\/tags\/\$tag/, "kijkt eerst of de tag er al is");
 });
 
 test("workflow Uitleveren: alleen met de hand, niet bij een merge en niet elk uur", () => {

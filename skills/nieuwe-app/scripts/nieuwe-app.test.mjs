@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { schrijfBestanden, tijdelijkeMap } from "../../../lib/test-hulp.mjs";
+import { nepGh, opruimen, schrijfBestanden, tijdelijkeMap, veldenVan } from "../../../lib/test-hulp.mjs";
 import {
   STAGE_TWO_LOGIN,
   controleerArgumenten,
@@ -35,6 +35,9 @@ import {
   zetLicentie,
   zetPluginBron,
   SENTRY_REGEL,
+  kloonAdres,
+  maakRepoUitTemplate,
+  repoBestaat,
 } from "./nieuwe-app.mjs";
 import { STAGE_TWO } from "../../../lib/levering.mjs";
 import { pluginBron } from "../../../lib/plugin-bron.mjs";
@@ -441,6 +444,37 @@ test("hervatBesluit: nieuw, hervatten, of weigeren als het niet van ons is", () 
   assert.equal(hervatBesluit({ repo: true, uitTemplate: false, map: false }).besluit, "weiger");
   assert.equal(hervatBesluit({ repo: true, uitTemplate: true, map: true, mapIsKloon: false }).besluit, "weiger");
   assert.equal(hervatBesluit({ repo: false, map: true }).besluit, "weiger");
+});
+
+test("GitHub via de REST-API: bestaat de repo, repo uit de template, kloonadres; nergens gh repo of gh pr", () => {
+  const wortel = tijdelijkeMap("nieuwe-app-gh-");
+  const gh = nepGh(wortel, {
+    "GET repo": { stdout: "voorraad\n" },
+    "POST generate": { stdout: "Org/voorraad\n" },
+    "config get": { stdout: "https\n" },
+    "GET pulls": { stdout: "" },
+  });
+  const oudPath = process.env.PATH;
+  process.env.PATH = `${gh.pad}:${oudPath}`;
+  try {
+    assert.equal(repoBestaat("Org/voorraad"), true);
+    maakRepoUitTemplate("Org/voorraad", { template: "Org/app-template-tier1", omschrijving: "Voorraad bijhouden" });
+    assert.equal(kloonAdres("Org/voorraad"), "https://github.com/Org/voorraad.git");
+    gh.zet({ "config get": { stdout: "ssh\n" }, "GET repo": { exit: 1, stderr: "gh: Not Found (HTTP 404)" } });
+    assert.equal(kloonAdres("Org/voorraad"), "git@github.com:Org/voorraad.git");
+    assert.equal(repoBestaat("Org/weg"), false);
+    gh.zet({});
+    assert.equal(kloonAdres("Org/voorraad"), "https://github.com/Org/voorraad.git", "zonder instelling: https");
+
+    const aanroepen = gh.aanroepen();
+    assert.ok(!aanroepen.some((a) => a[0] === "repo" || a[0] === "pr"), "gh repo en gh pr werken in een cloudsessie niet");
+    const maak = aanroepen.find((a) => a[1] === "repos/Org/app-template-tier1/generate");
+    assert.ok(maak.includes("POST"));
+    assert.deepEqual(veldenVan(maak), { owner: "Org", name: "voorraad", private: "true", description: "Voorraad bijhouden" });
+  } finally {
+    process.env.PATH = oudPath;
+    opruimen(wortel);
+  }
 });
 
 function nepGitHub(beginstand) {
