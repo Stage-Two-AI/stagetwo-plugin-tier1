@@ -65,7 +65,7 @@ import { fileURLToPath } from "node:url";
 import { LEVERING, STAGE_TWO } from "../../../lib/levering.mjs";
 import { SETTINGS_PAD, kiesPluginBron, metPluginBron } from "../../../lib/plugin-bron.mjs";
 import { geldigTestadres, zetTestadres } from "../../../lib/testmail.mjs";
-import { ghAanwezig, ghIngelogd, git, sh } from "../../../lib/repo.mjs";
+import { ghAanwezig, ghIngelogd, git, inDeCloud, sh } from "../../../lib/repo.mjs";
 
 /** De template uit levering.json (een abonnee), anders die van Stage Two; zie lib/levering.mjs. */
 export const TEMPLATE = LEVERING.template;
@@ -866,14 +866,28 @@ export function vraagToegangAan(beheer, arg, toegang, sha) {
 }
 
 /**
+ * Een cloudsessie (claude.ai) mag geen repo aanmaken, ziet alleen de repo's van het Project en
+ * krijgt van GitHub niets te horen over de organisatie (leden, plan, de lijst van repo's). Het
+ * aanmaken en het inrichten lopen daar dus vast, met een melding die de verkeerde kant op wijst
+ * ("is geen organisatie"). Daarom stoppen ze er vooraf, met wat de gebruiker wel kan doen.
+ */
+export const NIET_IN_DE_CLOUD = {
+  aanmaken:
+    "een nieuwe app aanmaken kan nog niet vanuit de cloud: een cloudsessie mag geen repo aanmaken en ziet alleen de repo's van het Project. Doe deze ene stap op een computer, met /stagetwo-tier1:nieuwe-app in Claude Code. Zet de nieuwe repo daarna in je Project; dan bouw je in de cloud verder met /stagetwo-tier1:verder-werken",
+  inrichten:
+    "een app laten inrichten kan nog niet vanuit de cloud: een cloudsessie ziet de organisatie en haar beheer-repo niet. Doe deze stap op een computer, met hetzelfde commando",
+};
+
+/**
  * Start de workflow in de beheer-repo en wacht op het resultaat. `gh` doet al het werk
  * met de login van de gebruiker: die heeft Write op stagetwo-beheer-tier1 (mag starten) en leest
  * het logboek. Er komt geen sleutel van Cloudflare aan te pas: die staan alleen in de
  * omgeving beheer van de beheer-repo.
  */
-export function richtIn(arg, { cwd = process.cwd(), wachtMs = 5000, maxWachtMinuten = 30 } = {}) {
+export function richtIn(arg, { cwd = process.cwd(), wachtMs = 5000, maxWachtMinuten = 30, env = process.env } = {}) {
   const fout = controleerArgumenten(arg);
   if (fout) return { status: "mislukt", reden: fout };
+  if (inDeCloud(env)) return { status: "mislukt", reden: NIET_IN_DE_CLOUD.inrichten, cloud: true };
   if (!ghAanwezig()) return { status: "mislukt", reden: "de GitHub-opdrachtregel (gh) ontbreekt; draai eerst /stagetwo-tier1:installatie" };
   if (!ghIngelogd()) return { status: "mislukt", reden: "log eerst in bij GitHub met `gh auth login` (zie /stagetwo-tier1:installatie)" };
 
@@ -993,9 +1007,10 @@ export function richtIn(arg, { cwd = process.cwd(), wachtMs = 5000, maxWachtMinu
 
 // ---------------------------------------------------------------- de run
 
-export function voorcontrole(arg, { cwd = process.cwd() } = {}) {
+export function voorcontrole(arg, { cwd = process.cwd(), env = process.env } = {}) {
   const fout = controleerArgumenten(arg);
   if (fout) return { status: "mislukt", reden: fout };
+  if (inDeCloud(env)) return { status: "mislukt", reden: NIET_IN_DE_CLOUD.aanmaken, cloud: true };
   for (const cli of ["git", "pnpm"]) {
     try {
       sh(cli, ["--version"], { shell: cli === "pnpm" && process.platform === "win32" });
